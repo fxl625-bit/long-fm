@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Flowmate 乐伴
 
-## Getting Started
+打开即服务的私人 AI DJ 音乐播放器。
 
-First, run the development server:
+## 产品定位
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+`播放器优先，AI 次之`
+
+- 打开首页即恢复上次播放或准备今日推荐
+- 主按钮是 `开始播放`，不是“生成”
+- AI DJ 负责编排队列、给一句串词、按轻量指令微调
+
+## 本轮核心改造
+
+- 主动 DJ 首页：`/`（今日推荐卡 + 当前播放 + 队列 + 轻量“告诉 DJ”）
+- 新接口：
+  - `GET /api/dj/today`
+  - `POST /api/dj/refresh`
+  - `POST /api/dj/tune`
+- 网易云官方 Provider：`NeteaseOfficialProvider`（服务端签名、token 缓存、状态降级）
+- Provider 优先级：`netease_official -> local -> demo -> netease_experimental -> generic_api`
+- 官方源不可用时自动 fallback，不阻塞首页与播放
+
+## 技术栈
+
+- Next.js 16 + React 19 + TypeScript
+- Tailwind CSS v4
+- Prisma + SQLite
+- OpenAI（可选）+ fallback 规则引擎
+
+## 页面结构
+
+- `/` 主页面（主动 DJ 首页，播放器主入口）
+- `/player` 播放器别名（重定向到 `/`）
+- `/workspace` 旧工作台入口（重定向到 `/`）
+- `/programs/[id]` 节目详情
+- `/profile` 音乐画像（降权）
+- `/settings/sources` 音乐源设置
+- `/sources` 兼容路径（重定向到 `/settings/sources`）
+
+## 环境变量
+
+`.env.example` 已预留所有字段；不要把真实密钥提交到仓库。
+
+```env
+NODE_ENV=development
+DATABASE_URL="file:./dev.db"
+
+MUSIC_PROVIDER=netease_official
+MUSIC_PROVIDER_FALLBACK=demo
+LOCAL_AUDIO_DIR=""
+
+NETEASE_OFFICIAL_ENABLED=false
+NETEASE_OFFICIAL_API_BASE_URL=""
+NETEASE_OFFICIAL_APP_ID=""
+NETEASE_OFFICIAL_APP_SECRET=""
+NETEASE_OFFICIAL_PUBLIC_KEY=""
+NETEASE_OFFICIAL_PRIVATE_KEY=""
+
+NETEASE_API_BASE_URL="http://localhost:3001"
+NETEASE_COOKIE=""
+
+OPENAI_API_KEY=""
+OPENAI_MODEL="gpt-4.1-mini"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 一键启动（Windows）
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+双击项目根目录 `start.bat`：
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. 自动补 `.env`
+2. 自动安装依赖（首次）
+3. 自动迁移与 seed（首次或强制）
+4. 自动启动 `http://localhost:3000`
 
-## Learn More
+强制重新初始化：
 
-To learn more about Next.js, take a look at the following resources:
+```bat
+set AURALIA_FORCE_SETUP=1 && start.bat
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+说明：`start.bat` 会先清理本项目遗留 `next dev` 进程，避免 Prisma 文件锁导致 setup 失败。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 终端启动
 
-## Deploy on Vercel
+```bash
+npm install
+npm run setup
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 验收命令
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npm run test
+npm run build
+npm run setup
+npm run mvp:smoke
+```
+
+## API 概览
+
+- `POST /api/auth/demo-login`
+- `POST /api/provider/sync`
+- `GET /api/provider/playlists`
+- `GET /api/sources/status`
+- `POST /api/profile/generate`
+- `POST /api/radio/generate`
+- `GET /api/radio/[id]`
+- `GET /api/dj/today`
+- `POST /api/dj/refresh`
+- `POST /api/dj/tune`
+- `GET/PUT /api/playback/session`
+- `GET /api/audio/local/[trackId]`
+
+## 安全要求
+
+- 真实 `AppSecret` / `PrivateKey` 仅放 `.env` 或 `.env.local`
+- `.env*` 已在 `.gitignore`
+- 前端不读取官方密钥
+- README / `.env.example` 不包含真实密钥
+- provider 请求均走服务端

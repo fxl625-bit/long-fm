@@ -1,4 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+﻿# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 /node_modules
@@ -12,10 +12,13 @@
 
 # testing
 /coverage
+/tmp/
+/.logs/
 
 # next.js
 /.next/
 /out/
+/.worktrees/
 
 # production
 /build
@@ -23,15 +26,23 @@
 # misc
 .DS_Store
 *.pem
+.auralia_initialized
+.flowmate_initialized
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+DEBUG_REPORT.md
+QA_CHECKLIST.md
 
 # env files (can opt-in for committing if needed)
+.env
+.env.local
 .env*
+public/tts-cache/
+data/song-brief-cache/
 
 # vercel
 .vercel
@@ -39,3 +50,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.logs/
+prisma/dev.db
+prisma/*.db
+prisma/*.db-*
+prisma/*.uploading.cfg
+*.pid
+tmp/
+
+.env.*.local

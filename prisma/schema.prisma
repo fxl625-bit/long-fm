@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ProviderType {
+  NETEASE_OFFICIAL
+  NETEASE
+  MOCK
+  LOCAL
+  GENERIC_API
+}
+
+enum ProgramStatus {
+  DRAFT
+  READY
+}
+
+enum MusicSourceType {
+  NETEASE_OFFICIAL
+  DEMO
+  LOCAL
+  NETEASE_EXPERIMENTAL
+  GENERIC_API
+}
+
+model User {
+  id             String            @id @default(cuid())
+  nickname       String
+  avatar         String?
+  provider       ProviderType      @default(MOCK)
+  providerUserId String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  playlists      Playlist[]
+  musicProfile   UserMusicProfile?
+  radioPrograms  RadioProgram[]
+  providerTokens ProviderSession[]
+  requests       ProgramRequest[]
+  playbackSession PlaybackSession?
+
+  @@unique([provider, providerUserId])
+}
+
+model ProviderSession {
+  id           String       @id @default(cuid())
+  userId       String
+  provider     ProviderType
+  accessToken  String?
+  refreshToken String?
+  cookie       String?
+  expiresAt    DateTime?
+  rawSession   Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, provider])
+}
+
+model Playlist {
+  id                 String          @id @default(cuid())
+  userId             String
+  providerPlaylistId String?
+  source             ProviderType    @default(MOCK)
+  name               String
+  description        String?
+  coverUrl           String?
+  isLikedPlaylist    Boolean         @default(false)
+  rawMeta            Json?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks             PlaylistTrack[]
+
+  @@unique([userId, providerPlaylistId])
+  @@index([userId])
+}
+
+model Track {
+  id              String              @id @default(cuid())
+  providerTrackId String
+  source          ProviderType        @default(MOCK)
+  sourceType      MusicSourceType     @default(DEMO)
+  name            String
+  artist          String
+  album           String?
+  duration        Int
+  durationMs      Int                 @default(0)
+  coverUrl        String?
+  audioUrl        String?
+  externalUrl     String?
+  localPath       String?
+  playableStatus  String?
+  language        String?
+  era             String?
+  moodTags        Json?
+  styleTags       Json?
+  energyLevel     String?
+  lyrics          String?
+  rawMeta         Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  playlists       PlaylistTrack[]
+  radioPrograms   RadioProgramTrack[]
+  playbackSessions PlaybackSession[]
+
+  @@unique([source, providerTrackId])
+}
+
+model PlaybackSession {
+  id            String          @id @default(cuid())
+  userId        String          @unique
+  currentTrackId String?
+  queueJson     Json
+  currentIndex  Int             @default(0)
+  currentTime   Int             @default(0)
+  isPlaying     Boolean         @default(false)
+  volume        Float           @default(0.85)
+  source        MusicSourceType @default(DEMO)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentTrack  Track?          @relation(fields: [currentTrackId], references: [id], onDelete: SetNull)
+
+  @@index([updatedAt])
+}
+
+model PlaylistTrack {
+  playlistId String
+  trackId    String
+  orderIndex Int
+  addedAt    DateTime @default(now())
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track      Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, trackId])
+  @@index([playlistId, orderIndex])
+}
+
+model UserMusicProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  summaryText           String
+  structuredProfileJson Json
+  topArtistsJson        Json?
+  listeningTrendJson    Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProgramRequest {
+  id          String         @id @default(cuid())
+  userId      String
+  prompt      String
+  contextJson Json?
+  createdAt   DateTime       @default(now())
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  programs    RadioProgram[]
+
+  @@index([userId, createdAt])
+}
+
+model RadioProgram {
+  id          String              @id @default(cuid())
+  userId      String
+  requestId   String?
+  title       String
+  subtitle    String?
+  prompt      String
+  theme       String?
+  mood        String?
+  introText   String
+  outroText   String
+  coverPrompt String?
+  coverUrl    String?
+  status      ProgramStatus       @default(READY)
+  programJson Json
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request     ProgramRequest?     @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  tracks      RadioProgramTrack[]
+
+  @@index([userId, createdAt])
+}
+
+model RadioProgramTrack {
+  id             String       @id @default(cuid())
+  radioProgramId String
+  trackId        String
+  orderIndex     Int
+  section        String?
+  reasonText     String
+  transitionText String
+  radioProgram   RadioProgram @relation(fields: [radioProgramId], references: [id], onDelete: Cascade)
+  track          Track        @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@index([radioProgramId, orderIndex])
+}
+
