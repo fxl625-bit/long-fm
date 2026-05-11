@@ -194,8 +194,8 @@ function createHostDebugState(): DJHostDebugState {
 
 export class RadioSessionEngine {
   private static readonly PAUSE_CONFIRMATION_MS = 350;
-  private static readonly FORCE_SPEAK_MAX_SILENT_TRACKS = 2;
-  private static readonly FORCE_SPEAK_MAX_SILENT_MINUTES = 6;
+  private static readonly FORCE_SPEAK_MAX_SILENT_TRACKS = 3;
+  private static readonly FORCE_SPEAK_MAX_SILENT_MINUTES = 10;
   private playedCount = 0;
   private recentPlayed: Track[] = [];
   private recentSkipped: Track[] = [];
@@ -617,14 +617,28 @@ export class RadioSessionEngine {
       return;
     }
 
+    const openingReady = Boolean(this.preparedOpeningSpeech);
+    if (openingReady) {
+      this.audioEngine.duckMusic({ target: 0.08, fadeDownMs: 80 });
+    }
+
     try {
       await this.audioEngine.play();
       this.store.setState({
-        status: "on_air",
+        status: openingReady ? "speaking" : "on_air",
         isPlaying: true,
+        isSpeaking: openingReady,
+        duckedVolume: openingReady ? { before: this.store.getState().volume, target: 0.08, restore: this.store.getState().volume, fadeDownMs: 80, fadeUpMs: 350 } : undefined,
       });
-      this.markHostingStarted();
-      void this.requestDirectorDecision("opening");
+      if (openingReady) {
+        this.markHostingStarted(true);
+        await this.playPreparedOpening();
+        this.audioEngine.restoreMusic(350);
+        this.store.setState({ isSpeaking: false, status: "playing", duckedVolume: undefined });
+      } else {
+        this.markHostingStarted(true);
+        void this.requestDirectorDecision("opening");
+      }
     } catch {
       this.store.setState({
         status: "locked",
@@ -643,17 +657,28 @@ export class RadioSessionEngine {
 
     this.audioEngine.unlockByUserGesture();
     this.audioEngine.setTrack(currentTrack, state.currentTime);
+
+    const openingReady = Boolean(this.preparedOpeningSpeech);
+    if (openingReady) {
+      this.audioEngine.duckMusic({ target: 0.08, fadeDownMs: 80 });
+    }
+
     const playPromise = this.audioEngine.play();
     this.store.setState({
-      status: "on_air",
+      status: openingReady ? "speaking" : "on_air",
       unlockedByUser: true,
       isPlaying: true,
+      isSpeaking: openingReady,
+      duckedVolume: openingReady ? { before: this.store.getState().volume, target: 0.08, restore: this.store.getState().volume, fadeDownMs: 80, fadeUpMs: 350 } : undefined,
     });
 
-    this.markHostingStarted();
-    if (this.preparedOpeningSpeech) {
-      void this.playPreparedOpening();
+    if (openingReady) {
+      this.markHostingStarted(true);
+      await this.playPreparedOpening();
+      this.audioEngine.restoreMusic(350);
+      this.store.setState({ isSpeaking: false, status: "playing", duckedVolume: undefined });
     } else {
+      this.markHostingStarted(true);
       void this.requestDirectorDecision("opening");
     }
     try {
@@ -1277,8 +1302,9 @@ export class RadioSessionEngine {
     }
 
     const nextState = this.store.getState();
-    if (!canHostNow(nextState)) {
-      return;
+    if (canHostNow(nextState)) {
+      const seconds = Math.floor(currentTimeMs / 1000);
+      this.hostingScheduler.onTimeTick(seconds, state.currentTrack, state.currentIndex, state.playableQueue.length);
     }
 
     const hour = new Date().getHours();
@@ -1291,23 +1317,46 @@ export class RadioSessionEngine {
 
   onAudioEnded() {
     const state = this.store.getState();
-    if (state.currentTrack) {
+    const endedTrack = state.currentTrack;
+    if (endedTrack) {
       this.playedCount += 1;
-      this.recentPlayed = [...this.recentPlayed, state.currentTrack].slice(-5);
+      this.recentPlayed = [...this.recentPlayed, endedTrack].slice(-5);
     }
+    this.hostingScheduler.onTrackEnd(endedTrack, state.currentIndex, state.playableQueue.length);
     if (state.currentIndex >= state.playableQueue.length - 1) {
       void this.nextTrack();
       return;
     }
-    const triggerByArtist = this.hasSameArtistStreak(this.recentPlayed);
-    const triggerByStyle = this.hasSameStyleStreak(this.recentPlayed);
 
-    if (triggerByArtist) void this.requestDirectorDecision("avoid_repetition");
-    if (triggerByStyle) void this.requestDirectorDecision("shift_style");
-    if (this.playedCount >= this.nextSpeechTrackThreshold) {
+    const nextTrack = state.playableQueue[state.currentIndex + 1];
+    const atSegmentBoundary = this.isSegmentBoundary(endedTrack, nextTrack);
+    const hasEnergyShift = this.hasEnergyShift(endedTrack, nextTrack);
+    const naturalBreak = atSegmentBoundary || hasEnergyShift;
+    const tracksSinceLastSpeak = this.playedCount - (this.lastSpeakTimestamp ? 0 : 0);
+    const softCooldown = this.playedCount >= this.nextSpeechTrackThreshold;
+
+    if (naturalBreak && softCooldown) {
+      void this.requestDirectorDecision("bridge_to_next");
+    } else if (this.playedCount >= 5 && softCooldown) {
       void this.requestDirectorDecision("bridge_to_next");
     }
     void this.nextTrack();
+  }
+
+  private isSegmentBoundary(current: Track | null, next: Track | null) {
+    if (!current || !next) return false;
+    const program = this.store.getState().currentProgram;
+    if (!program?.segments.length) return false;
+    const currentSeg = program.segments.find((seg) => seg.trackIds.includes(current.providerTrackId ?? current.id));
+    const nextSeg = program.segments.find((seg) => seg.trackIds.includes(next.providerTrackId ?? next.id));
+    return Boolean(currentSeg && nextSeg && currentSeg.purpose !== nextSeg.purpose);
+  }
+
+  private hasEnergyShift(current: Track | null, next: Track | null) {
+    if (!current || !next) return false;
+    const curEnergy = current.tags?.energy ?? (current.durationMs && current.durationMs >= 280000 ? "low" : current.durationMs && current.durationMs < 210000 ? "high" : "medium");
+    const nextEnergy = next.tags?.energy ?? (next.durationMs && next.durationMs >= 280000 ? "low" : next.durationMs && next.durationMs < 210000 ? "high" : "medium");
+    return curEnergy !== nextEnergy;
   }
 
   onAudioPlay() {
@@ -1316,7 +1365,8 @@ export class RadioSessionEngine {
     if (state.status !== "speaking") {
       this.store.setState({ status: "playing", isPlaying: true });
     }
-    this.markHostingStarted();
+    this.hostingScheduler.onTrackStart(state.currentTrack, state.currentIndex, state.playableQueue.length);
+    this.markHostingStarted(true);
   }
 
   onAudioPause() {
@@ -1725,29 +1775,24 @@ export class RadioSessionEngine {
       playableTrackPool: state.playableQueue.slice(0, 80),
       forceSpeak,
       tracksSinceLastSpeak,
+      sceneContext: {
+        season: listeningContext.season,
+        weatherHint: listeningContext.weatherHint,
+        dayOfWeek: listeningContext.dayOfWeek,
+        weekdayType: listeningContext.weekdayType,
+        likelyScene: listeningContext.likelyScene,
+      },
       minutesSinceLastSpeak: Number.isFinite(minutesSinceLastSpeak) ? Number(minutesSinceLastSpeak.toFixed(2)) : 999,
     };
   }
 
-  private hasSameArtistStreak(recentTracks: Track[]) {
-    if (recentTracks.length < 2) return false;
-    return recentTracks[recentTracks.length - 1]?.artist === recentTracks[recentTracks.length - 2]?.artist;
-  }
-
-  private hasSameStyleStreak(recentTracks: Track[]) {
-    if (recentTracks.length < 3) return false;
-    const a = recentTracks[recentTracks.length - 1]?.tags?.style?.[0];
-    const b = recentTracks[recentTracks.length - 2]?.tags?.style?.[0];
-    const c = recentTracks[recentTracks.length - 3]?.tags?.style?.[0];
-    return Boolean(a && b && c && a === b && b === c);
-  }
 
 
   getDebugState() {
     return nowPlayingDebug(this.store.getState(), this.audioEngine);
   }
 
-  private markHostingStarted() {
+  private markHostingStarted(skipSchedulerOpening = false) {
     if (this.hostingStarted) {
       return;
     }
@@ -1765,6 +1810,11 @@ export class RadioSessionEngine {
     }
 
     this.hostingStarted = true;
+    this.hostingScheduler.start(state.currentProgram ?? null, {
+      currentTrack: state.currentTrack,
+      currentIndex: state.currentIndex,
+      queueLength: state.playableQueue.length,
+    }, { skipOpening: skipSchedulerOpening });
     this.updateHostDebug({
       ...createHostDebugState(),
       state: "playing_music",

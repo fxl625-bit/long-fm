@@ -3,7 +3,7 @@ import type { Track } from "@/lib/radio/radio-types";
 import { OpenAIDJProvider } from "./openai-dj-provider";
 
 function baseProgramTitle(playlistName?: string) {
-  return playlistName ? `${playlistName} On Air` : "Auralia FM";
+  return playlistName ? `${playlistName} On Air` : "Long FM";
 }
 
 function ensureSentence(text: string) {

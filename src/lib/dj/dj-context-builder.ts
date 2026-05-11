@@ -12,50 +12,116 @@ function inferWeekdayType(day: number): ListeningContext["weekdayType"] {
   return day === 0 || day === 6 ? "weekend" : "workday";
 }
 
+function inferDayOfWeek(day: number): ListeningContext["dayOfWeek"] {
+  const days: ListeningContext["dayOfWeek"][] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  return days[day];
+}
+
+function inferSeason(month: number): ListeningContext["season"] {
+  if (month >= 2 && month <= 4) return "spring";
+  if (month >= 5 && month <= 7) return "summer";
+  if (month >= 8 && month <= 10) return "autumn";
+  return "winter";
+}
+
+function inferWeatherHint(season: ListeningContext["season"], timeOfDay: ListeningContext["timeOfDay"]): string {
+  const hints: Record<string, Record<string, string>> = {
+    spring: {
+      morning: "春天早晨，空气还有点凉，光线正在变软。",
+      afternoon: "春日午后，温度刚好，适合开着窗让风进来。",
+      evening: "春天的傍晚暗得慢，空气里有花粉和湿润的泥土味。",
+      night: "春夜微凉，外面偶尔有虫鸣，适合安静收束。",
+    },
+    summer: {
+      morning: "夏日清晨，阳光已经很亮了但还没开始热，空气干净。",
+      afternoon: "盛夏午后，外面热浪翻滚，屋里开空调正好听点清凉的。",
+      evening: "夏天的傍晚终于凉下来，天空从橙色变紫，适合出门或开窗。",
+      night: "夏夜闷热但不烦躁，偶尔有风从窗缝进来。",
+    },
+    autumn: {
+      morning: "秋天的早晨有点凉，光线偏金色，适合清醒地开始。",
+      afternoon: "秋日午后，天空高远光线柔和，适合专注或走神。",
+      evening: "秋天的傍晚暗得快，路灯亮得早，空气里有干燥的叶子味。",
+      night: "秋夜微凉，适合裹着毯子听歌，声音会显得更近。",
+    },
+    winter: {
+      morning: "冬天早晨天还没全亮，被窝外面有点冷，需要慢慢暖起来。",
+      afternoon: "冬日午后阳光最珍贵，抓紧那一点暖意。",
+      evening: "冬天傍晚天早就黑了，街上的灯比平时更亮，适合回家路上听。",
+      night: "冬夜很长，外面安静得像世界按了暂停，适合深一点的歌。",
+    },
+  };
+  return hints[season]?.[timeOfDay] ?? "天气和光线跟平时一样，适合让音乐自己说话。";
+}
+
+type SceneConfig = {
+  likelyScene: ListeningContext["likelyScene"];
+  energyTarget: ListeningContext["energyTarget"];
+  recommendedMood: string[];
+};
+
+function inferSceneConfig(
+  timeOfDay: ListeningContext["timeOfDay"],
+  weekdayType: ListeningContext["weekdayType"],
+): SceneConfig {
+  if (timeOfDay === "morning") {
+    return {
+      likelyScene: weekdayType === "workday" ? "commute" : "relax",
+      energyTarget: weekdayType === "workday" ? "medium" : "medium",
+      recommendedMood: weekdayType === "workday" ? ["清醒", "轻快", "启动感"] : ["松弛", "缓慢启动", "不赶时间"],
+    };
+  }
+  if (timeOfDay === "afternoon") {
+    return {
+      likelyScene: weekdayType === "workday" ? "work" : "focus",
+      energyTarget: "medium",
+      recommendedMood: weekdayType === "workday" ? ["稳定", "专注", "不过冲"] : ["沉浸", "自由", "稍深一点"],
+    };
+  }
+  if (timeOfDay === "evening") {
+    return {
+      likelyScene: weekdayType === "workday" ? "commute" : "relax",
+      energyTarget: "medium",
+      recommendedMood: weekdayType === "workday" ? ["归途感", "放松", "城市感"] : ["放松", "温暖", "慢慢过渡"],
+    };
+  }
+  return {
+    likelyScene: weekdayType === "workday" ? "relax" : "sleep",
+    energyTarget: "low",
+    recommendedMood: weekdayType === "workday" ? ["舒缓", "收束", "明天再说"] : ["安静", "怀旧", "深度聆听"],
+  };
+}
+
+function buildReason(
+  timeOfDay: ListeningContext["timeOfDay"],
+  weekdayType: ListeningContext["weekdayType"],
+  season: ListeningContext["season"],
+  weatherHint: string,
+): string {
+  const dayLabel = weekdayType === "workday" ? "工作日" : "周末";
+  const seasonLabel = { spring: "春天", summer: "夏天", autumn: "秋天", winter: "冬天" }[season];
+  return `${dayLabel}${timeOfDay === "morning" ? "早晨" : timeOfDay === "afternoon" ? "午后" : timeOfDay === "evening" ? "傍晚" : "深夜"}，${seasonLabel}。${weatherHint}`;
+}
+
 export function buildListeningContext(now = new Date()): ListeningContext {
   const timeOfDay = inferTimeOfDay(now.getHours());
   const weekdayType = inferWeekdayType(now.getDay());
-
-  if (timeOfDay === "morning") {
-    return {
-      timeOfDay,
-      weekdayType,
-      likelyScene: weekdayType === "workday" ? "commute" : "relax",
-      energyTarget: "medium",
-      recommendedMood: ["轻快", "清醒", "熟悉感"],
-      reason: "早间先从熟悉和中等能量进入，避免一下太重。",
-    };
-  }
-
-  if (timeOfDay === "afternoon") {
-    return {
-      timeOfDay,
-      weekdayType,
-      likelyScene: weekdayType === "workday" ? "work" : "focus",
-      energyTarget: "medium",
-      recommendedMood: ["稳定", "专注", "不过冲"],
-      reason: "下午更适合稳定节奏，减少风格突然跳转。",
-    };
-  }
-
-  if (timeOfDay === "evening") {
-    return {
-      timeOfDay,
-      weekdayType,
-      likelyScene: "relax",
-      energyTarget: "medium",
-      recommendedMood: ["放松", "城市感", "缓慢推进"],
-      reason: "傍晚适合从放松过渡到轻度推进。",
-    };
-  }
+  const dayOfWeek = inferDayOfWeek(now.getDay());
+  const season = inferSeason(now.getMonth());
+  const weatherHint = inferWeatherHint(season, timeOfDay);
+  const scene = inferSceneConfig(timeOfDay, weekdayType);
+  const reason = buildReason(timeOfDay, weekdayType, season, weatherHint);
 
   return {
     timeOfDay,
     weekdayType,
-    likelyScene: "sleep",
-    energyTarget: "low",
-    recommendedMood: ["舒缓", "怀旧", "克制"],
-    reason: "夜间优先中低能量，避免高刺激。",
+    dayOfWeek,
+    season,
+    weatherHint,
+    likelyScene: scene.likelyScene,
+    energyTarget: scene.energyTarget,
+    recommendedMood: scene.recommendedMood,
+    reason,
   };
 }
 

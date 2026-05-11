@@ -113,8 +113,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "public", status: "available", message: "Public audio ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     };
     const store = new RadioStore(initialState);
     const audioEngine = {
@@ -221,8 +221,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
       currentProgram: program,
     });
     const audioEngine = {
@@ -321,8 +321,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -403,8 +403,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -510,8 +510,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -612,10 +612,10 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
       currentProgram: {
-        title: "Auralia FM",
+        title: "Long FM",
         intent: "test",
         queueTrackIds: [trackA.id, trackB.id],
         segments: [
@@ -718,8 +718,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -835,8 +835,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -940,8 +940,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(),
@@ -1024,8 +1024,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const hostingScheduler = {
       start: vi.fn(),
@@ -1103,8 +1103,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const hostingScheduler = {
       start: vi.fn(),
@@ -1195,8 +1195,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const hostingScheduler = {
       start: vi.fn(),
@@ -1280,8 +1280,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     let resolvePlay: (() => void) | null = null;
     const playPromise = new Promise<void>((resolve) => {
@@ -1415,8 +1415,8 @@ describe("radio session engine", () => {
       duration: 0,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const engine = new RadioSessionEngine(
       store,
@@ -1556,8 +1556,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -1686,8 +1686,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const engine = new RadioSessionEngine(
       store,
@@ -1827,8 +1827,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const engine = new RadioSessionEngine(
       store,
@@ -1928,8 +1928,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const engine = new RadioSessionEngine(
       store,
@@ -2026,8 +2026,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -2153,8 +2153,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const voiceQueue = {
       enqueue: vi.fn(async () => undefined),
@@ -2264,8 +2264,8 @@ describe("radio session engine", () => {
       duration: 180000,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const engine = new RadioSessionEngine(
       store,
@@ -2408,8 +2408,8 @@ describe("radio session engine", () => {
       duration: 0,
       volume: 0.82,
       providerStatus: { provider: "netease", status: "available", message: "ready" },
-      djName: "Auralia",
-      channelName: "Auralia FM",
+      djName: "Long",
+      channelName: "Long FM",
     });
     const audioEngine = {
       getCurrentSrc: vi.fn(() => ""),

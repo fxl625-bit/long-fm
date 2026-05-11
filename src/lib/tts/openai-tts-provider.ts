@@ -3,6 +3,19 @@ import { OpenAIDJProvider } from "@/lib/dj/openai-dj-provider";
 import { TTSCache } from "./tts-cache";
 import type { TTSProvider, TTSRequest, TTSResult, TTSVoice } from "./tts-provider";
 
+export const OPENAI_TTS_DEFAULT_VOICE = "marin";
+
+const OPENAI_KNOWN_VOICES = new Set([
+  "alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse", "marin",
+]);
+
+function resolveOpenAIVoice(requested?: string): string {
+  if (requested && OPENAI_KNOWN_VOICES.has(requested)) {
+    return requested;
+  }
+  return readServerEnvVar("OPENAI_TTS_VOICE") ?? OPENAI_TTS_DEFAULT_VOICE;
+}
+
 function estimateDurationMs(text: string, speed = 1) {
   const charCount = text.trim().length;
   return Math.max(2200, Math.round((charCount * 260) / Math.max(speed, 0.6)));
@@ -23,7 +36,7 @@ export class OpenAITTSProvider implements TTSProvider {
   async listVoices(): Promise<TTSVoice[]> {
     return [
       {
-        id: readServerEnvVar("OPENAI_TTS_VOICE") ?? "marin",
+        id: readServerEnvVar("OPENAI_TTS_VOICE") ?? OPENAI_TTS_DEFAULT_VOICE,
         name: "OpenAI Marin",
         locale: "zh-CN",
         gender: "neutral",
@@ -33,7 +46,7 @@ export class OpenAITTSProvider implements TTSProvider {
   }
 
   async synthesize(request: TTSRequest): Promise<TTSResult> {
-    const voice = request.voice ?? readServerEnvVar("OPENAI_TTS_VOICE") ?? "marin";
+    const voice = resolveOpenAIVoice(request.voice);
     const identity = {
       provider: "openai" as const,
       voice,

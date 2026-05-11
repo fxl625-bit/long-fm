@@ -5,21 +5,26 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const playlistId = typeof body?.playlistId === "string" ? body.playlistId.trim() : "";
-    const limit = Math.max(1, Math.min(50, Number(body?.limit ?? "30") || 30));
+    const playlistIds: string[] = Array.isArray(body?.playlistIds)
+      ? body.playlistIds.filter((id: unknown) => typeof id === "string" && id.trim())
+      : [];
+    const limit = Math.max(1, Math.min(300, Number(body?.limit ?? "100") || 100));
     const level = body?.level === "higher" || body?.level === "exhigh" ? body.level : "standard";
 
-    if (!playlistId) {
+    const ids = playlistIds.length > 0 ? playlistIds : playlistId ? [playlistId] : [];
+
+    if (!ids.length) {
       return NextResponse.json(
         {
           ok: false,
-          message: "playlistId is required",
+          message: "playlistId or playlistIds is required",
         },
         { status: 400 },
       );
     }
 
     const service = new NeteasePlayableService();
-    const result = await service.buildPlayableQueue(playlistId, { limit, level });
+    const result = await service.buildPlayableQueueFromIds(ids, { limit, level });
 
     return NextResponse.json({
       ok: true,

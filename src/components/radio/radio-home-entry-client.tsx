@@ -197,9 +197,6 @@ export function RadioHomeEntryClient() {
 
         <div className="flex items-center justify-between px-2 text-xs text-zinc-500">
           <span>{PRODUCT_NAME}</span>
-          <Link href="/settings/sources" className="hover:text-zinc-900">
-            音乐源设置
-          </Link>
         </div>
       </div>
     </div>

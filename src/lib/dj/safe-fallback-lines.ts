@@ -29,7 +29,7 @@ export function buildSafeFallbackLines(input: SafeFallbackInput): string[] {
   const currentArtist = artist(input.currentTrack);
 
   if (input.event === "opening") {
-    const lines = ["这里是 Auralia FM。"];
+    const lines = ["这里是 Long FM。"];
     if (input.currentTrack) {
       lines.push(`${currentArtist} 的这首歌先放一会儿。`);
     } else {

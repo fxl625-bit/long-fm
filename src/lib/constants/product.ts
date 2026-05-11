@@ -1,9 +1,9 @@
 ﻿import type { ProgramTweak } from "@/lib/types/music";
 
-export const PRODUCT_NAME = "Auralia FM";
+export const PRODUCT_NAME = "Long FM";
 export const PRODUCT_TAGLINE = "你的私人 AI DJ 电台";
-export const DEFAULT_CHANNEL_NAME = "Auralia FM";
-export const DEFAULT_DJ_NAME = "Auralia";
+export const DEFAULT_CHANNEL_NAME = "Long FM";
+export const DEFAULT_DJ_NAME = "Long";
 export const DEFAULT_PROGRAM_HOST_TONE = "全天候、克制、自然，会随时间调整语气";
 export const DEFAULT_PROGRAM_INTENT = "先接住熟悉感，再慢慢推进，让这一段频道自然流动。";
 

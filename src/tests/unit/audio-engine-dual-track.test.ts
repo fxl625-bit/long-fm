@@ -61,8 +61,8 @@ function makeState(): RadioState {
     duration: 0,
     volume: 0.82,
     providerStatus: { provider: "public", status: "available", message: "ready" },
-    djName: "Auralia",
-    channelName: "Auralia FM",
+    djName: "Long",
+    channelName: "Long FM",
   };
 }
 
@@ -136,15 +136,25 @@ describe("dual-track audio engine", () => {
         method: "POST",
         body: JSON.stringify({
           text: line,
-          provider: "edge_tts",
-          voice: "zh-CN-YunjianNeural",
-          rate: "-12%",
-          pitch: "-4Hz",
+          provider: "openai",
+          voice: "marin",
+          rate: "-8%",
+          pitch: "-1Hz",
           style: "night_radio",
         }),
       }),
     );
-    expect(playDJ).toHaveBeenCalledWith("/tts-cache/opening.mp3", { manageMusic: true });
+    expect(playDJ).toHaveBeenCalledWith(
+      "/tts-cache/opening.mp3",
+      expect.objectContaining({
+        manageMusic: false,
+        speechMixProfile: expect.objectContaining({
+          target: 0.18,
+          fadeDownMs: 120,
+          fadeUpMs: 180,
+        }),
+      }),
+    );
   });
 });
 

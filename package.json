@@ -31,6 +31,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "edge-tts-universal": "^1.4.0",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",
     "openai": "^6.34.0",

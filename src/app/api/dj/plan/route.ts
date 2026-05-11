@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { DEFAULT_CHANNEL_NAME } from "@/lib/constants/product";
+import { buildListeningContext } from "@/lib/dj/dj-context-builder";
 import { createProgramPlanWithDeepSeek } from "@/lib/dj/llm-program-planner";
 import type { Track } from "@/lib/radio/radio-types";
 
@@ -74,12 +75,22 @@ export async function POST(request: Request) {
     );
   }
 
+  const listeningContext = buildListeningContext(new Date());
   const result = await createProgramPlanWithDeepSeek({
     playlistName,
     timeOfDay: inferTimeOfDay(),
     userMemorySummary: summarizePool(candidateTracks),
     playableTrackPool: candidateTracks,
     recentTracks: candidateTracks.slice(0, 5),
+    listeningContext: {
+      season: listeningContext.season,
+      weatherHint: listeningContext.weatherHint,
+      dayOfWeek: listeningContext.dayOfWeek,
+      weekdayType: listeningContext.weekdayType,
+      likelyScene: listeningContext.likelyScene,
+      energyTarget: listeningContext.energyTarget,
+      recommendedMood: listeningContext.recommendedMood,
+    },
   });
 
   return NextResponse.json({

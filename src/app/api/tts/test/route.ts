@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const defaults = normalizeDJVoiceSettings();
-    const text = typeof body?.text === "string" && body.text.trim() ? body.text.trim() : "这里是 Auralia。声音已经切过来了。";
+    const text = typeof body?.text === "string" && body.text.trim() ? body.text.trim() : "这里是 Long FM。声音已经切过来了。";
     const provider = typeof body?.provider === "string" && isTTSProviderId(body.provider) ? body.provider : undefined;
     const voice = typeof body?.voice === "string" && body.voice.trim() ? body.voice.trim() : defaults.voice;
     const rate = typeof body?.rate === "string" && body.rate.trim() ? body.rate.trim() : defaults.rate;

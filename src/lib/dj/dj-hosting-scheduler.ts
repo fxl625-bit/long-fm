@@ -96,7 +96,7 @@ export class DJHostingScheduler {
     this.onDebugChange = input.onDebugChange;
   }
 
-  start(plan: DJProgramPlan | null, context: StartContext) {
+  start(plan: DJProgramPlan | null, context: StartContext, opts?: { skipOpening?: boolean }) {
     this.plan = plan;
     this.firedMoments.clear();
     this.playedCount = 0;
@@ -107,7 +107,13 @@ export class DJHostingScheduler {
     this.lastBridgeAt = 0;
     this.lastStyleShiftAt = 0;
     this.setState("opening");
-    void this.scheduleOpening(context.currentTrack);
+    if (!opts?.skipOpening) {
+      void this.scheduleOpening(context.currentTrack);
+    } else {
+      this.firedMoments.add("opening");
+      this.updateDebug({ openingDone: true, lastTalkBreakEvent: "opening" });
+      this.setState("playing_music");
+    }
   }
 
   stop() {
@@ -151,12 +157,6 @@ export class DJHostingScheduler {
     this.queueLength = queueLength;
     this.updateDebug({ playedCount: this.playedCount });
 
-    if (this.playedCount % 4 === 0) {
-      void this.scheduleMoment("style_shift", track, this.playedCount);
-    } else if (this.playedCount % 2 === 0) {
-      void this.scheduleMoment("bridge", track, this.playedCount);
-    }
-
     if (!this.outroShown() && queueLength > 0 && index >= queueLength - 1) {
       void this.scheduleMoment("outro", track, this.playedCount);
     }
@@ -172,10 +172,6 @@ export class DJHostingScheduler {
 
     if (track?.id && seconds >= 8 && seconds <= 20 && this.lastTrackIntroTrackId !== track.id) {
       void this.scheduleMoment("track_intro", track, seconds);
-    }
-
-    if (seconds >= 300) {
-      void this.scheduleMoment("time_context", track, seconds);
     }
   }
 

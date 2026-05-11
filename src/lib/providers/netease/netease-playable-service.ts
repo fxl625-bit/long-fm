@@ -133,7 +133,7 @@ export class NeteasePlayableService {
       });
     this.trackLoader =
       options.trackLoader ??
-      (async (playlistId: string, limit = 30) => {
+      (async (playlistId: string, limit = 100) => {
         const cookie = await this.cookieResolver();
         if (!cookie) {
           throw new Error("NetEase cookie is missing");
@@ -163,7 +163,7 @@ export class NeteasePlayableService {
       });
   }
 
-  async getPlaylistTracks(playlistId: string, limit = 30): Promise<NeteaseTrack[]> {
+  async getPlaylistTracks(playlistId: string, limit = 100): Promise<NeteaseTrack[]> {
     const detail = await this.trackLoader(playlistId, limit);
     return detail.tracks;
   }
@@ -202,12 +202,46 @@ export class NeteasePlayableService {
       level?: "standard" | "higher" | "exhigh";
     } = {},
   ): Promise<BuildQueueResult> {
-    const detail = await this.trackLoader(playlistId, options.limit ?? 30);
-    const stats = createStats(detail.tracks.length);
+    return this.buildPlayableQueueFromIds([playlistId], options);
+  }
+
+  async buildPlayableQueueFromIds(
+    playlistIds: string[],
+    options: {
+      limit?: number;
+      level?: "standard" | "higher" | "exhigh";
+    } = {},
+  ): Promise<BuildQueueResult> {
+    const limit = options.limit ?? 100;
+    const perPlaylistLimit = Math.max(30, Math.ceil(limit / Math.max(1, playlistIds.length)));
+
+    const allTracks: NeteaseTrack[] = [];
+    const seenIds = new Set<string>();
+    let playlistName = "";
+
+    for (const pid of playlistIds) {
+      const detail = await this.trackLoader(pid, perPlaylistLimit);
+      if (!playlistName) playlistName = detail.playlistName;
+      for (const track of detail.tracks) {
+        const key = track.neteaseId || track.id;
+        if (seenIds.has(key)) continue;
+        seenIds.add(key);
+        allTracks.push(track);
+      }
+    }
+
+    // Shuffle for variety across playlists
+    for (let i = allTracks.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allTracks[i], allTracks[j]] = [allTracks[j], allTracks[i]];
+    }
+
+    const selected = allTracks.slice(0, limit);
+    const stats = createStats(selected.length);
     const playableTracks: RadioTrack[] = [];
     const failedTracks: FailedTrack[] = [];
 
-    for (const track of detail.tracks) {
+    for (const track of selected) {
       const resolved = await this.resolveTrackUrl(track, options.level ?? "standard");
       if (isRadioTrack(resolved)) {
         playableTracks.push(resolved);
@@ -223,10 +257,11 @@ export class NeteasePlayableService {
       else stats.apiError += 1;
     }
 
+    const nameSuffix = playlistIds.length > 1 ? ` +${playlistIds.length - 1} 个歌单` : "";
     return {
-      playlistId: detail.playlistId,
-      playlistName: detail.playlistName,
-      tracksTotal: detail.tracks.length,
+      playlistId: playlistIds[0],
+      playlistName: playlistName ? `${playlistName}${nameSuffix}` : "多歌单合并",
+      tracksTotal: selected.length,
       playableTracks,
       failedTracks,
       stats,

@@ -5,7 +5,7 @@ import { Volume2 } from "lucide-react";
 import { DJ_VOICE_PRESETS, getDJVoicePreset } from "@/lib/tts/tts-settings";
 import { readDJVoiceSettings, subscribeDJVoiceSettings, writeDJVoiceSettings } from "@/lib/tts/tts-settings-store";
 
-const PREVIEW_TEXT = "这里是 Auralia。声音已经切过来了。";
+const PREVIEW_TEXT = "这里是 Long FM。声音已经切过来了。";
 
 export function VoiceSelector() {
   const [settings, setSettings] = useState(() => readDJVoiceSettings());

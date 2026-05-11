@@ -1,4 +1,4 @@
-﻿import type { Track } from "./radio-types";
+import type { SpeechMixProfile, Track } from "./radio-types";
 
 type AudioEventHandlers = {
   onEnded?: () => void;
@@ -11,7 +11,19 @@ function canUseBrowserAudio() {
   return typeof window !== "undefined" && typeof Audio !== "undefined";
 }
 
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export class AudioEngine {
+  private static readonly DEFAULT_SPEECH_MIX: SpeechMixProfile = {
+    target: 0.10,
+    fadeDownMs: 150,
+    fadeUpMs: 250,
+  };
+
   private musicAudio: HTMLAudioElement | null = null;
   private djAudio: HTMLAudioElement | null = null;
   private baseVolume = 0.82;
@@ -118,7 +130,10 @@ export class AudioEngine {
     this.musicAudio?.pause();
   }
 
-  async playDJ(audioUrl: string, options: { manageMusic?: boolean } = {}) {
+  async playDJ(
+    audioUrl: string,
+    options: { manageMusic?: boolean; speechMixProfile?: Partial<SpeechMixProfile> } = {},
+  ) {
     if (!audioUrl) {
       return;
     }
@@ -128,12 +143,17 @@ export class AudioEngine {
 
     const dj = this.djAudio!;
     const manageMusic = options.manageMusic ?? true;
+    const speechMixProfile = this.resolveSpeechMixProfile(options.speechMixProfile);
     if (manageMusic) {
-      this.duckMusic();
+      this.duckMusic(speechMixProfile);
+      if (speechMixProfile.fadeDownMs > 0) {
+        await sleep(speechMixProfile.fadeDownMs);
+      }
     }
     dj.pause();
     dj.currentTime = 0;
     dj.src = audioUrl;
+    dj.volume = 1.0;
 
     try {
       await new Promise<void>((resolve) => {
@@ -153,7 +173,10 @@ export class AudioEngine {
       });
     } finally {
       if (manageMusic) {
-        this.restoreMusic();
+        this.restoreMusic(speechMixProfile);
+        if (speechMixProfile.fadeUpMs > 0) {
+          await sleep(speechMixProfile.fadeUpMs);
+        }
       }
     }
   }
@@ -165,16 +188,23 @@ export class AudioEngine {
     }
   }
 
-  duckMusic() {
-    if (this.musicAudio) {
-      this.musicAudio.volume = 0.35;
+  duckMusic(profile: Partial<SpeechMixProfile> = {}) {
+    if (!this.musicAudio) {
+      return;
     }
+    const speechMixProfile = this.resolveSpeechMixProfile(profile);
+    this.musicAudio.volume = speechMixProfile.target;
   }
 
-  restoreMusic() {
-    if (this.musicAudio) {
-      this.musicAudio.volume = this.baseVolume;
+  restoreMusic(fadeUpMsOrProfile?: number | Partial<SpeechMixProfile>) {
+    if (!this.musicAudio) {
+      return;
     }
+    const speechMixProfile =
+      typeof fadeUpMsOrProfile === "number"
+        ? this.resolveSpeechMixProfile({ fadeUpMs: fadeUpMsOrProfile })
+        : this.resolveSpeechMixProfile(fadeUpMsOrProfile);
+    this.musicAudio.volume = speechMixProfile.restore ?? this.baseVolume;
   }
 
   duck() {
@@ -235,5 +265,15 @@ export class AudioEngine {
       return null;
     }
     return this.musicAudio;
+  }
+
+  private resolveSpeechMixProfile(profile: Partial<SpeechMixProfile> = {}): SpeechMixProfile {
+    return {
+      before: profile.before ?? this.baseVolume,
+      target: profile.target ?? AudioEngine.DEFAULT_SPEECH_MIX.target,
+      restore: profile.restore ?? this.baseVolume,
+      fadeDownMs: profile.fadeDownMs ?? AudioEngine.DEFAULT_SPEECH_MIX.fadeDownMs,
+      fadeUpMs: profile.fadeUpMs ?? AudioEngine.DEFAULT_SPEECH_MIX.fadeUpMs,
+    };
   }
 }

@@ -43,6 +43,14 @@ export type TimelineItem =
   | { type: "dj"; text: string; triggerTime: number }
   | { type: "track"; trackIndex: number };
 
+export type SpeechMixProfile = {
+  before?: number;
+  target: number;
+  restore?: number;
+  fadeDownMs: number;
+  fadeUpMs: number;
+};
+
 export type RadioStatus =
   | "idle"
   | "login_required"
@@ -97,10 +105,7 @@ export type RadioState = {
   ttsVoice?: string;
   ttsRate?: string;
   ttsPitch?: string;
-  duckedVolume?: {
-    before?: number;
-    after?: number;
-  };
+  duckedVolume?: SpeechMixProfile;
   lastDJLine?: string;
   lastDJAudioUrl?: string;
   preparedOpeningSpeech?: string;

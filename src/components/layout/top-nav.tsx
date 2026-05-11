@@ -14,12 +14,6 @@ export function TopNav() {
         <Link href="/" className="transition hover:text-zinc-200">
           Home
         </Link>
-        <Link href="/lab" className="transition hover:text-zinc-200">
-          Lab
-        </Link>
-        <Link href="/music" className="transition hover:text-zinc-200">
-          Music
-        </Link>
       </nav>
     </header>
   );
@@ -30,12 +24,6 @@ export function CompactTopNav() {
     <nav className="relative z-50 flex items-center justify-between px-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
       <Link href="/" className="pointer-events-auto transition hover:text-zinc-900">
         Home
-      </Link>
-      <Link href="/lab" className="pointer-events-auto transition hover:text-zinc-900">
-        Lab
-      </Link>
-      <Link href="/music" className="pointer-events-auto transition hover:text-zinc-900">
-        Music
       </Link>
     </nav>
   );

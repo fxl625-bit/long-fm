@@ -1,6 +1,6 @@
-﻿import type { AudioEngine } from "./audio-engine";
+import type { AudioEngine } from "./audio-engine";
 import type { RadioStore } from "./radio-store";
-import type { RadioStatus } from "./radio-types";
+import type { RadioStatus, SpeechMixProfile } from "./radio-types";
 import { readDJVoiceSettings } from "@/lib/tts/tts-settings-store";
 
 type SpeakPayload = {
@@ -79,6 +79,12 @@ async function requestTTS(text: string): Promise<{
   };
 }
 
+const SPEECH_MIX_PROFILE: SpeechMixProfile = {
+  target: 0.10,
+  fadeDownMs: 150,
+  fadeUpMs: 250,
+};
+
 export class DJEngine {
   private speaking = false;
   private speechDepth = 0;
@@ -99,19 +105,17 @@ export class DJEngine {
     }
 
     const previousState = this.store.getState();
+    const speechMix = this.resolveSpeechMixProfile(previousState.volume);
     this.previousStatus = previousState.status;
     this.previousPlaying = previousState.isPlaying;
     this.previousUnlockedByUser = previousState.unlockedByUser;
     this.speaking = true;
-    this.audioEngine.duckMusic();
+    this.audioEngine.duckMusic(speechMix);
     this.store.update((prev) => ({
       ...prev,
       status: "speaking",
       isSpeaking: true,
-      duckedVolume: {
-        before: prev.volume,
-        after: 0.35,
-      },
+      duckedVolume: speechMix,
     }));
   }
 
@@ -125,7 +129,8 @@ export class DJEngine {
       return;
     }
 
-    this.audioEngine.restoreMusic();
+    const speechMix = this.store.getState().duckedVolume ?? this.resolveSpeechMixProfile(this.store.getState().volume);
+    this.audioEngine.restoreMusic(speechMix);
     const restoreStatus =
       this.previousStatus === "speaking"
         ? this.previousPlaying
@@ -139,6 +144,12 @@ export class DJEngine {
       ...prev,
       status: restoreStatus,
       isSpeaking: false,
+      duckedVolume: prev.duckedVolume
+        ? {
+            ...prev.duckedVolume,
+            restore: prev.duckedVolume.restore ?? prev.volume,
+          }
+        : prev.duckedVolume,
     }));
 
     this.previousStatus = null;
@@ -167,11 +178,13 @@ export class DJEngine {
 
     try {
       const previousState = this.store.getState();
+      const speechMix = previousState.duckedVolume ?? this.resolveSpeechMixProfile(previousState.volume);
       this.store.update((prev) => ({
         ...prev,
         status: "speaking",
         isSpeaking: true,
         lastDJLine: safeLine,
+        duckedVolume: prev.duckedVolume ?? speechMix,
         subtitleHistory: prev.currentSubtitle ? [prev.currentSubtitle, ...prev.subtitleHistory].slice(0, 5) : prev.subtitleHistory,
       }));
 
@@ -199,7 +212,9 @@ export class DJEngine {
         lastDJAudioUrl: ttsUrl ?? undefined,
       });
 
-      const djPlayback = ttsUrl ? this.audioEngine.playDJ(ttsUrl, { manageMusic: !withinGroup }) : Promise.resolve();
+      const djPlayback = ttsUrl
+        ? this.audioEngine.playDJ(ttsUrl, { manageMusic: false, speechMixProfile: speechMix })
+        : Promise.resolve();
 
       const sentences = splitSentences(safeLine).slice(0, 4);
       const start = Date.now();
@@ -225,5 +240,14 @@ export class DJEngine {
       }
     }
   }
-}
 
+  private resolveSpeechMixProfile(volume: number): SpeechMixProfile {
+    return {
+      before: volume,
+      target: SPEECH_MIX_PROFILE.target,
+      restore: volume,
+      fadeDownMs: SPEECH_MIX_PROFILE.fadeDownMs,
+      fadeUpMs: SPEECH_MIX_PROFILE.fadeUpMs,
+    };
+  }
+}

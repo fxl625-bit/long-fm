@@ -50,7 +50,7 @@ export const demoProgramsSeed: DemoProgramSeed[] = [
     coverPrompt: "城市高架、晨光、玻璃反射、干净构图",
     vibeDescription: "稳定进入 -> 轻微抬升 -> 柔和回收",
     arrangementLogic: "开场建立熟悉感，中段增加推进力，后段回落到可循环区间。",
-    hostTone: "Auralia",
+    hostTone: "Long",
     tracks: [
       { providerTrackId: "t001", section: "opening", reasonText: "先建立稳定速度。", transitionText: "先从《立交桥风景》开场，把状态放平。" },
       { providerTrackId: "t010", section: "opening", reasonText: "延续平稳质感。", transitionText: "《Quiet Avenue》接上，保持流动不抢注意力。" },
@@ -71,7 +71,7 @@ export const demoProgramsSeed: DemoProgramSeed[] = [
     coverPrompt: "旧磁带、胶片颗粒、浅灰蓝、留白",
     vibeDescription: "怀旧底色里保持现代连贯",
     arrangementLogic: "先建立年代感，中段补节奏，尾段回收成可循环的安静状态。",
-    hostTone: "Auralia",
+    hostTone: "Long",
     tracks: [
       { providerTrackId: "t005", section: "opening", reasonText: "直接建立怀旧底色。", transitionText: "先从《旧磁带回放》开始，把耳朵调到熟悉频段。" },
       { providerTrackId: "t004", section: "build", reasonText: "补齐英文颗粒感。", transitionText: "《Blue Metro》接上，旧感会更完整。" },
@@ -92,7 +92,7 @@ export const demoProgramsSeed: DemoProgramSeed[] = [
     coverPrompt: "桌面台灯、纸张、柔和阴影、极简色调",
     vibeDescription: "低噪进入 -> 持续工作段 -> 平稳收尾",
     arrangementLogic: "低能量开场，中段保持稳定密度，末段回收，避免突兀变化。",
-    hostTone: "Auralia",
+    hostTone: "Long",
     tracks: [
       { providerTrackId: "t006", section: "opening", reasonText: "先降噪。", transitionText: "《Paper Lamp》先把听感整理干净。" },
       { providerTrackId: "t011", section: "build", reasonText: "贴合写作场景。", transitionText: "《写信的人》接上，维持低干扰文字感。" },

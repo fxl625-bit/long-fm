@@ -3,6 +3,8 @@ import { TTSManager } from "@/lib/tts/tts-manager";
 import type { TTSProvider, TTSRequest, TTSResult, TTSVoice } from "@/lib/tts/tts-provider";
 
 class FakeProvider implements TTSProvider {
+  public readonly requests: TTSRequest[] = [];
+
   constructor(
     public readonly id: string,
     private readonly available: boolean,
@@ -24,6 +26,7 @@ class FakeProvider implements TTSProvider {
   }
 
   async synthesize(request: TTSRequest): Promise<TTSResult> {
+    this.requests.push(request);
     return {
       ...this.result,
       text: request.text,
@@ -83,5 +86,81 @@ describe("TTSManager", () => {
     expect(result.mode).toBe("audio");
     expect(result.provider).toBe("edge_tts");
     expect(result.audioUrl).toBe("/tts-cache/edge.mp3");
+  });
+
+  it("prefers the most natural available provider by default", async () => {
+    const openai = new FakeProvider("openai", true, {
+      mode: "audio",
+      audioUrl: "/tts-cache/openai.mp3",
+      text: "",
+      provider: "openai",
+      voice: "marin",
+    });
+    const edge = new FakeProvider("edge_tts", true, {
+      mode: "audio",
+      audioUrl: "/tts-cache/edge.mp3",
+      text: "",
+      provider: "edge_tts",
+      voice: "zh-CN-XiaoxiaoNeural",
+    });
+    const manager = new TTSManager({
+      fallbackProvider: "subtitle_only",
+      providers: {
+        openai,
+        edge_tts: edge,
+        subtitle_only: new FakeProvider("subtitle_only", true, {
+          mode: "subtitle_only",
+          text: "",
+          provider: "subtitle_only",
+        }),
+      },
+    });
+
+    const result = await manager.synthesize({ text: "Long FM wants the more natural voice path." });
+
+    expect(result.provider).toBe("openai");
+    expect(result.audioUrl).toBe("/tts-cache/openai.mp3");
+    expect(openai.requests).toHaveLength(1);
+    expect(edge.requests).toHaveLength(0);
+  });
+
+  it("respects an explicit provider override even when a more natural provider is available", async () => {
+    const openai = new FakeProvider("openai", true, {
+      mode: "audio",
+      audioUrl: "/tts-cache/openai.mp3",
+      text: "",
+      provider: "openai",
+      voice: "marin",
+    });
+    const edge = new FakeProvider("edge_tts", true, {
+      mode: "audio",
+      audioUrl: "/tts-cache/edge.mp3",
+      text: "",
+      provider: "edge_tts",
+      voice: "zh-CN-XiaoxiaoNeural",
+    });
+    const manager = new TTSManager({
+      fallbackProvider: "subtitle_only",
+      providers: {
+        openai,
+        edge_tts: edge,
+        subtitle_only: new FakeProvider("subtitle_only", true, {
+          mode: "subtitle_only",
+          text: "",
+          provider: "subtitle_only",
+        }),
+      },
+    });
+
+    const result = await manager.synthesize({
+      text: "Use the explicitly selected provider.",
+      provider: "edge_tts",
+      voice: "zh-CN-XiaoxiaoNeural",
+    });
+
+    expect(result.provider).toBe("edge_tts");
+    expect(result.audioUrl).toBe("/tts-cache/edge.mp3");
+    expect(edge.requests).toHaveLength(1);
+    expect(openai.requests).toHaveLength(0);
   });
 });

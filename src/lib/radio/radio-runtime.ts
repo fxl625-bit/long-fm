@@ -268,7 +268,7 @@ export class RadioRuntime {
           model: "deepseek-chat",
           usedFallback: true,
           parsedPlan: {
-            title: playlistName || "Auralia FM",
+            title: playlistName || "Long FM",
             intent: "先从熟悉的声音进入，中段再慢慢把颜色推开。",
             segments: [],
             queueTrackIds: playableTracks.map((track) => track.providerTrackId),
@@ -349,6 +349,7 @@ export class RadioRuntime {
       ttsVoice: radio.ttsVoice ?? null,
       ttsRate: radio.ttsRate ?? null,
       ttsPitch: radio.ttsPitch ?? null,
+      duckedVolume: radio.duckedVolume ?? null,
       djAudioUrl: radio.lastDJAudioUrl ?? null,
       djCurrentSrc: this.core.audioEngine.getCurrentDJSrc(),
       queueVersion: radio.queueVersion ?? 0,
@@ -609,7 +610,7 @@ export class RadioRuntime {
         },
       });
 
-      const payload = await this.buildQueueImpl(playlistId, { limit: 30, level: "standard" });
+      const payload = await this.buildQueueImpl(playlistId, { limit: 100, level: "standard" });
       this.setNeteaseState({ playableTrackCount: payload.stats.playable });
 
       if (!payload.ok || !payload.playableTracks.length) {

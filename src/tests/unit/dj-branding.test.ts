@@ -30,8 +30,8 @@ function makeTrack(id: string, title: string, artist: string): Track {
 }
 
 describe("DJ branding and all-day prompts", () => {
-  it("uses Auralia FM as the default product identity", () => {
-    expect(PRODUCT_NAME).toBe("Auralia FM");
+  it("uses Long FM as the default product identity", () => {
+    expect(PRODUCT_NAME).toBe("Long FM");
     expect(PRODUCT_TAGLINE).toBe("你的私人 AI DJ 电台");
   });
 
@@ -46,10 +46,10 @@ describe("DJ branding and all-day prompts", () => {
       recentTracks: [makeTrack("1", "Today", "Artist A")],
     });
 
-    expect(plannerPrompt).toContain("Auralia FM");
+    expect(plannerPrompt).toContain("Long FM");
     expect(plannerPrompt).toContain("ProgramPlan");
     expect(plannerPrompt).toContain("openingLine、openingLines、hostingMoments、djMoments");
-    expect(directorPrompt).toContain("Auralia FM");
+    expect(directorPrompt).toContain("Long FM");
     expect(directorPrompt).toContain("不要自行改成夜色频道");
     expect(userPrompt).toContain("morning / afternoon / evening");
     expect(userPrompt).toContain("soundHints、knownContext");
@@ -63,7 +63,7 @@ describe("DJ branding and all-day prompts", () => {
       },
     );
 
-    expect(plan.title).toBe("Auralia FM");
+    expect(plan.title).toBe("Long FM");
     expect(plan.intent).toBe("先接住熟悉感，再慢慢推进，让这一段频道自然流动。");
     expect("openingLine" in plan).toBe(false);
     expect("openingLines" in plan).toBe(false);

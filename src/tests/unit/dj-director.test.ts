@@ -6,7 +6,7 @@ import { LLMDJDirector, buildDirectorPromptPayload, normalizeDirectorDecision } 
 import type { DJDirectorDecision } from "@/lib/dj/dj-types";
 
 describe("broadcast persona prompt", () => {
-  it("describes Auralia as a radio persona instead of an assistant or music analyst", () => {
+  it("describes Long as a radio persona instead of an assistant or music analyst", () => {
     const prompt = buildBroadcastPersonaSystemPrompt();
 
     expect(prompt).toContain("你不是 AI 助手");

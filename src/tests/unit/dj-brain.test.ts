@@ -121,7 +121,7 @@ describe("resolveDJBrainDecision", () => {
             expect(input.plan.pattern).toBeTruthy();
             return {
               lines: [
-                "这里是 Auralia FM。",
+                "这里是 Long FM。",
                 "这个时间先让声音贴近一点，但不急着把节奏推满。",
                 "RAYE 和 Al Green 把《Goodbye Henry.》唱得很近，像一盏低一点的灯。",
                 "第一段先顺着这点灵魂乐的温度往前走。",

@@ -4,7 +4,7 @@ import type { DJDirectorContext, DJDirectorTrigger } from "./dj-types";
 export const MAX_LINE_LENGTH = 40;
 
 export const DJ_SYSTEM_PROMPT = [
-  "你是私人音乐电台主持人 Auralia。",
+  "你是私人音乐电台主持人 Long。",
   "你不能使用套话。",
   "你每次说话必须落在当前歌曲、下一首、歌手、专辑、声音细节或转场逻辑上。",
   "如果没有可靠背景资料，就只讲具体听感和接法。",

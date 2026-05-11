@@ -34,7 +34,7 @@ export function mapProgramRecordToGeneratedProgram(record: ProgramWithTracks): G
     arrangementLogic: String(metadata.arrangementLogic ?? "先进入，再推进，最后回收，保证听感连贯。"),
     introText: record.introText,
     outroText: record.outroText,
-    hostTone: String(metadata.hostTone ?? "Auralia"),
+    hostTone: String(metadata.hostTone ?? "Long"),
     posterCopy: record.coverPrompt ?? undefined,
     tracks: tracksDetailed.map((item, index) => ({
       trackId: item.track.id,

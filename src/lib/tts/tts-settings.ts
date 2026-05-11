@@ -1,7 +1,13 @@
+export type DJVoiceProvider = "volcengine" | "edge_tts" | "openai";
+
+export const EDGE_TTS_DEFAULT_VOICE = "zh-CN-XiaoxiaoNeural";
+export const OPENAI_TTS_DEFAULT_VOICE = "marin";
+export const VOLCENGINE_DEFAULT_VOICE = "zh_female_shuangkuaisisi_moon_bigtts";
+
 export type DJVoicePreset = {
   id: string;
   label: string;
-  provider: "edge_tts";
+  provider: DJVoiceProvider;
   voice: string;
   rate: string;
   pitch: string;
@@ -10,7 +16,7 @@ export type DJVoicePreset = {
 
 export type DJVoiceSettings = {
   presetId: string;
-  provider: "edge_tts";
+  provider: DJVoiceProvider;
   voice: string;
   rate: string;
   pitch: string;
@@ -18,40 +24,49 @@ export type DJVoiceSettings = {
 
 export const DJ_VOICE_PRESETS: DJVoicePreset[] = [
   {
-    id: "night_male",
-    label: "低声男声",
-    provider: "edge_tts",
-    voice: "zh-CN-YunjianNeural",
-    rate: "-12%",
-    pitch: "-4Hz",
-    description: "更像深夜电台，低一点，慢一点",
+    id: "natural_warm",
+    label: "Natural Warm",
+    provider: "volcengine",
+    voice: "zh_female_shuangkuaisisi_moon_bigtts",
+    rate: "-5%",
+    pitch: "+0Hz",
+    description: "Default DJ voice using Volcengine TTS with a natural, warm female tone.",
   },
   {
-    id: "warm_male",
-    label: "温和男声",
-    provider: "edge_tts",
-    voice: "zh-CN-YunxiNeural",
+    id: "volc_male_warm",
+    label: "Volc Male Warm",
+    provider: "volcengine",
+    voice: "zh_male_wennuanqingnian_moon_bigtts",
     rate: "-8%",
-    pitch: "-2Hz",
-    description: "自然、温和、陪伴感",
+    pitch: "+0Hz",
+    description: "A warm male Volcengine voice for a more mature DJ tone.",
   },
   {
-    id: "soft_female",
-    label: "温柔女声",
+    id: "volc_calm_female",
+    label: "Volc Calm Female",
+    provider: "volcengine",
+    voice: "zh_female_chenwenjingjing_moon_bigtts",
+    rate: "-10%",
+    pitch: "+0Hz",
+    description: "A calmer, slower female voice for night or quiet segments.",
+  },
+  {
+    id: "edge_female",
+    label: "Edge Female",
     provider: "edge_tts",
     voice: "zh-CN-XiaoxiaoNeural",
     rate: "-8%",
     pitch: "-2Hz",
-    description: "轻一点，适合白天和咖啡馆感",
+    description: "Edge TTS fallback with Xiaoxiao female voice.",
   },
   {
-    id: "clear_female",
-    label: "清亮女声",
+    id: "edge_male",
+    label: "Edge Male",
     provider: "edge_tts",
-    voice: "zh-CN-XiaoyiNeural",
-    rate: "-5%",
-    pitch: "+0Hz",
-    description: "更清晰，适合普通播报",
+    voice: "zh-CN-YunxiNeural",
+    rate: "-8%",
+    pitch: "-2Hz",
+    description: "Edge TTS fallback with Yunxi male voice.",
   },
 ];
 
@@ -66,7 +81,7 @@ export function normalizeDJVoiceSettings(input?: Partial<DJVoiceSettings> | null
 
   return {
     presetId: preset.id,
-    provider: "edge_tts",
+    provider: input?.provider ?? preset.provider,
     voice: input?.voice?.trim() || preset.voice,
     rate: input?.rate?.trim() || preset.rate,
     pitch: input?.pitch?.trim() || preset.pitch,

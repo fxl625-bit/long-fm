@@ -4,6 +4,7 @@ import { KokoroTTSProvider } from "./kokoro-tts-provider";
 import { OpenAITTSProvider } from "./openai-tts-provider";
 import { PiperTTSProvider } from "./piper-tts-provider";
 import { SubtitleTTSProvider } from "./subtitle-tts-provider";
+import { VolcengineTTSProvider } from "./volcengine-tts-provider";
 import type { TTSProvider, TTSProviderId, TTSProviderStatus, TTSRequest, TTSResult } from "./tts-provider";
 import { isTTSProviderId } from "./tts-types";
 
@@ -13,11 +14,16 @@ type TTSManagerOptions = {
   providers?: Partial<Record<TTSProviderId, TTSProvider>>;
 };
 
+const NATURAL_PROVIDER_ORDER: TTSProviderId[] = ["volcengine", "openai", "edge_tts", "kokoro", "piper", "subtitle_only"];
+
 function resolveProviderOrder(): TTSProviderId[] {
   const preferred = readServerEnvVar("TTS_PROVIDER");
-  const primary = isTTSProviderId(preferred) ? preferred : "edge_tts";
-  const ordered: TTSProviderId[] = ["edge_tts", "kokoro", "piper", "openai", "subtitle_only"];
-  return [primary, ...ordered.filter((item) => item !== primary)];
+  if (!preferred || preferred === "auto" || preferred === "edge_tts") {
+    return NATURAL_PROVIDER_ORDER;
+  }
+
+  const primary = isTTSProviderId(preferred) ? preferred : NATURAL_PROVIDER_ORDER[0];
+  return [primary, ...NATURAL_PROVIDER_ORDER.filter((item) => item !== primary)];
 }
 
 function resolveFallbackProvider(): TTSProviderId {
@@ -32,6 +38,7 @@ export class TTSManager {
 
   constructor(options: TTSManagerOptions = {}) {
     this.providers = {
+      volcengine: options.providers?.volcengine ?? new VolcengineTTSProvider(),
       edge_tts: options.providers?.edge_tts ?? new EdgeTTSProvider(),
       kokoro: options.providers?.kokoro ?? new KokoroTTSProvider(),
       piper: options.providers?.piper ?? new PiperTTSProvider(),
@@ -79,7 +86,7 @@ export class TTSManager {
     );
 
     return {
-      currentProvider: this.providerOrder[0] ?? "edge_tts",
+      currentProvider: this.providerOrder[0] ?? NATURAL_PROVIDER_ORDER[0],
       fallbackProvider: this.fallbackProvider,
       statuses,
     };

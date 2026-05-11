@@ -153,6 +153,11 @@ export function buildDirectorPromptPayload(input: {
     recentLines: input.context.recentLines?.slice(-4) ?? [],
     sceneContext: {
       timeOfDay: input.context.timeOfDay,
+      season: input.context.sceneContext?.season,
+      weatherHint: input.context.sceneContext?.weatherHint,
+      dayOfWeek: input.context.sceneContext?.dayOfWeek,
+      weekdayType: input.context.sceneContext?.weekdayType,
+      likelyScene: input.context.sceneContext?.likelyScene,
       currentWindow: describeCurrentWindow(input.context.timeOfDay),
       silencePressure: describeSilencePressure(input.context),
     },
@@ -219,6 +224,7 @@ function buildPrompt(input: {
     rules: buildBroadcastPersonaRules({
       forceSpeak: Boolean(input.context.forceSpeak),
       timeOfDay: input.context.timeOfDay,
+      trigger: input.trigger,
     }),
   });
 }
@@ -378,7 +384,7 @@ export class LLMDJDirector {
       systemPrompt: buildSystemPrompt(),
       userPrompt: input.rawPrompt,
       temperature: 0.25,
-      maxTokens: 600,
+      maxTokens: 1200,
     });
 
     if (!response.ok) {

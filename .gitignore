@@ -59,3 +59,5 @@ prisma/*.uploading.cfg
 tmp/
 
 .env.*.local
+
+.vercel

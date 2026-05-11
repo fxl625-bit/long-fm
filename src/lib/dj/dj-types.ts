@@ -36,6 +36,9 @@ export type UserMusicMemory = {
 export type ListeningContext = {
   timeOfDay: "morning" | "afternoon" | "evening" | "night";
   weekdayType: "workday" | "weekend";
+  dayOfWeek: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+  season: "spring" | "summer" | "autumn" | "winter";
+  weatherHint: string;
   likelyScene: "work" | "commute" | "relax" | "focus" | "drive" | "sleep" | "unknown";
   energyTarget: "low" | "medium" | "high";
   recommendedMood: string[];
@@ -329,6 +332,13 @@ export type DJDirectorContext = {
   forceSpeak?: boolean;
   tracksSinceLastSpeak?: number;
   minutesSinceLastSpeak?: number;
+  sceneContext?: {
+    season?: string;
+    weatherHint?: string;
+    dayOfWeek?: string;
+    weekdayType?: string;
+    likelyScene?: string;
+  };
 };
 
 export type DJDirectorTrigger =

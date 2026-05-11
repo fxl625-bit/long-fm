@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      speaker: "Auralia",
+      speaker: "Long",
       ...result,
     });
   } catch (error) {

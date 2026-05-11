@@ -6,12 +6,29 @@ import type { TTSProvider, TTSRequest, TTSResult, TTSVoice } from "./tts-provide
 
 const execFileAsync = promisify(execFile);
 
+export const EDGE_TTS_DEFAULT_VOICE = "zh-CN-XiaoxiaoNeural";
+
 const EDGE_ZH_VOICES: TTSVoice[] = [
   { id: "zh-CN-XiaoxiaoNeural", name: "Xiaoxiao", locale: "zh-CN", gender: "female", provider: "edge_tts" },
   { id: "zh-CN-YunxiNeural", name: "Yunxi", locale: "zh-CN", gender: "male", provider: "edge_tts" },
   { id: "zh-CN-YunjianNeural", name: "Yunjian", locale: "zh-CN", gender: "male", provider: "edge_tts" },
   { id: "zh-CN-XiaoyiNeural", name: "Xiaoyi", locale: "zh-CN", gender: "female", provider: "edge_tts" },
+  { id: "zh-CN-YunyangNeural", name: "Yunyang", locale: "zh-CN", gender: "male", provider: "edge_tts" },
+  { id: "zh-CN-YunhaoNeural", name: "Yunhao", locale: "zh-CN", gender: "male", provider: "edge_tts" },
+  { id: "zh-CN-XiaohanNeural", name: "Xiaohan", locale: "zh-CN", gender: "female", provider: "edge_tts" },
+  { id: "zh-CN-XiaochenNeural", name: "Xiaochen", locale: "zh-CN", gender: "female", provider: "edge_tts" },
+  { id: "zh-CN-XiaoyouNeural", name: "Xiaoyou", locale: "zh-CN", gender: "female", provider: "edge_tts" },
+  { id: "zh-CN-XiaoshuangNeural", name: "Xiaoshuang", locale: "zh-CN", gender: "female", provider: "edge_tts" },
 ];
+
+const EDGE_KNOWN_VOICE_IDS = new Set(EDGE_ZH_VOICES.map((v) => v.id));
+
+function resolveEdgeVoice(requested?: string): string {
+  if (requested && EDGE_KNOWN_VOICE_IDS.has(requested)) {
+    return requested;
+  }
+  return readServerEnvVar("EDGE_TTS_VOICE") ?? EDGE_TTS_DEFAULT_VOICE;
+}
 
 type CommandCandidate = {
   command: string;
@@ -57,7 +74,13 @@ export class EdgeTTSProvider implements TTSProvider {
   }
 
   async isAvailable(): Promise<boolean> {
-    return Boolean(await this.getCommandCandidate());
+    if (await this.getCommandCandidate()) return true;
+    try {
+      await import("edge-tts-universal");
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async listVoices(): Promise<TTSVoice[]> {
@@ -66,11 +89,7 @@ export class EdgeTTSProvider implements TTSProvider {
 
   async synthesize(request: TTSRequest): Promise<TTSResult> {
     const candidate = await this.getCommandCandidate();
-    if (!candidate) {
-      throw new Error("edge-tts is not installed.");
-    }
-
-    const voice = request.voice ?? readServerEnvVar("EDGE_TTS_VOICE") ?? "zh-CN-YunjianNeural";
+    const voice = resolveEdgeVoice(request.voice);
     const speed = request.speed ?? 1;
     const rate = toEdgeRate(request.rate, speed);
     const pitch = toEdgePitch(request.pitch);
@@ -98,24 +117,38 @@ export class EdgeTTSProvider implements TTSProvider {
     }
 
     const entry = this.cache.resolve(identity);
-    await execFileAsync(
-      candidate.command,
-      [
-        ...candidate.args,
-        "--voice",
-        voice,
-        `--rate=${rate}`,
-        `--pitch=${pitch}`,
-        "--text",
-        request.text.trim(),
-        "--write-media",
-        entry.filePath,
-      ],
-      {
-        timeout: 45000,
-        windowsHide: true,
-      },
-    );
+
+    if (candidate) {
+      try {
+        await execFileAsync(
+          candidate.command,
+          [
+            ...candidate.args,
+            "--voice",
+            voice,
+            `--rate=${rate}`,
+            `--pitch=${pitch}`,
+            "--text",
+            request.text.trim(),
+            "--write-media",
+            entry.filePath,
+          ],
+          { timeout: 45000, windowsHide: true },
+        );
+      } catch {
+        // CLI failed, fall through to JS-native implementation
+      }
+    }
+
+    // If CLI didn't produce output, use the JS-native package (works on Vercel)
+    const { existsSync } = await import("node:fs");
+    if (!existsSync(entry.filePath)) {
+      const { EdgeTTS } = await import("edge-tts-universal");
+      const tts = new EdgeTTS(request.text.trim(), voice, { rate, pitch, volume: "+0%" });
+      const result = await tts.synthesize();
+      const buffer = Buffer.from(await result.audio.arrayBuffer());
+      this.cache.writeAudio(entry.filePath, buffer);
+    }
 
     const durationMs = estimateDurationMs(request.text, speed);
     this.cache.writeMetadata({

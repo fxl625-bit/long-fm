@@ -1,4 +1,4 @@
-export type TTSProviderId = "edge_tts" | "kokoro" | "piper" | "openai" | "subtitle_only";
+export type TTSProviderId = "volcengine" | "edge_tts" | "kokoro" | "piper" | "openai" | "subtitle_only";
 export type TTSOutputMode = "audio" | "subtitle_only";
 export type TTSStyle = "dj" | "calm" | "energetic" | "night" | "neutral" | "night_radio";
 
@@ -39,5 +39,5 @@ export type TTSProviderStatus = {
 };
 
 export function isTTSProviderId(value: string | undefined): value is TTSProviderId {
-  return value === "edge_tts" || value === "kokoro" || value === "piper" || value === "openai" || value === "subtitle_only";
+  return value === "volcengine" || value === "edge_tts" || value === "kokoro" || value === "piper" || value === "openai" || value === "subtitle_only";
 }

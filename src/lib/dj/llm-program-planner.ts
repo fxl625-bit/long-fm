@@ -28,40 +28,99 @@ type ProgramPlannerInput = {
   userMemorySummary: string;
   playableTrackPool: Track[];
   recentTracks: Track[];
+  listeningContext?: {
+    season?: string;
+    weatherHint?: string;
+    dayOfWeek?: string;
+    weekdayType?: string;
+    likelyScene?: string;
+    energyTarget?: string;
+    recommendedMood?: string[];
+  };
   deepseekClient?: Pick<DeepSeekClient, "chatJson" | "isConfigured" | "model">;
 };
 
 function fallbackPlan(input: ProgramPlannerInput): DJProgramPlan {
-  const queueTrackIds = input.playableTrackPool.slice(0, 12).map((track) => getQueuePatchTrackId(track));
+  const pool = input.playableTrackPool;
+  const queueTrackIds = pool.slice(0, 20).map((track) => getQueuePatchTrackId(track));
+
+  const sorted = [...pool].sort((a, b) => (a.durationMs ?? 0) - (b.durationMs ?? 0));
+  const lowEnergy = sorted.slice(0, Math.ceil(sorted.length / 3));
+  const medEnergy = sorted.slice(Math.ceil(sorted.length / 3), Math.ceil((2 * sorted.length) / 3));
+  const highEnergy = sorted.slice(Math.ceil((2 * sorted.length) / 3));
+
+  function pickDiverse(source: Track[], count: number, excludeArtists: Set<string> = new Set()): Track[] {
+    const result: Track[] = [];
+    const used = new Set(excludeArtists);
+    const remaining = [...source];
+    while (result.length < count && remaining.length > 0) {
+      const idx = remaining.findIndex((track) => !used.has(track.artist.split(" / ")[0].trim()));
+      if (idx === -1) {
+        result.push(remaining.shift()!);
+        continue;
+      }
+      const [track] = remaining.splice(idx, 1);
+      used.add(track.artist.split(" / ")[0].trim());
+      result.push(track);
+    }
+    return result;
+  }
+
+  const warmupTracks = pickDiverse([...lowEnergy, ...medEnergy], 4);
+  const warmupArtists = new Set(warmupTracks.map((track) => track.artist.split(" / ")[0].trim()));
+
+  const mainTracks = pickDiverse([...medEnergy, ...highEnergy], 5, warmupArtists);
+  const mainArtists = new Set([...warmupArtists, ...mainTracks.map((track) => track.artist.split(" / ")[0].trim())]);
+
+  const shiftTracks = pickDiverse([...highEnergy, ...medEnergy, ...lowEnergy], 4, mainArtists);
+  const shiftArtists = new Set([...mainArtists, ...shiftTracks.map((track) => track.artist.split(" / ")[0].trim())]);
+
+  const cooldownTracks = pickDiverse([...lowEnergy, ...medEnergy], 4, shiftArtists);
+
+  const allSelected = [...warmupTracks, ...mainTracks, ...shiftTracks, ...cooldownTracks];
+  const remaining = pool.filter((track) => !allSelected.some((selected) => selected.id === track.id));
+  const finalQueue = [...allSelected, ...remaining].slice(0, 30);
+
+  const timeOfDay = input.timeOfDay;
+  const titleSuffix = timeOfDay === "morning" ? "晨间启程" : timeOfDay === "afternoon" ? "午后流动" : timeOfDay === "evening" ? "黄昏轨迹" : "深夜静听";
+
   return normalizeProgramPlan(
     {
-      title: input.playlistName || DEFAULT_CHANNEL_NAME,
+      title: `${input.playlistName || DEFAULT_CHANNEL_NAME} · ${titleSuffix}`,
       intent: DEFAULT_PROGRAM_INTENT,
-      queueTrackIds,
+      queueTrackIds: finalQueue.map((track) => getQueuePatchTrackId(track)),
       segments: [
         {
-          name: "Warmup",
+          name: "开场稳住",
           purpose: "warmup",
-          trackIds: queueTrackIds.slice(0, 4),
+          trackIds: warmupTracks.map((track) => getQueuePatchTrackId(track)),
           targetMood: ["松弛", "熟悉"],
           targetEnergy: "low",
-          reason: "先稳住入口。",
+          reason: "用熟悉的声音先把频道锚定住。",
         },
         {
-          name: "Main",
+          name: "逐步推进",
           purpose: "main",
-          trackIds: queueTrackIds.slice(4, 8),
+          trackIds: mainTracks.map((track) => getQueuePatchTrackId(track)),
           targetMood: ["展开", "流动"],
           targetEnergy: "medium",
-          reason: "把中段慢慢展开。",
+          reason: "保持连贯，慢慢把节奏和色彩推起来。",
         },
         {
-          name: "Shift",
+          name: "换色拓展",
           purpose: "shift",
-          trackIds: queueTrackIds.slice(8, 12),
+          trackIds: shiftTracks.map((track) => getQueuePatchTrackId(track)),
           targetMood: ["换色", "透气"],
-          targetEnergy: "medium",
-          reason: "留一点颜色变化。",
+          targetEnergy: timeOfDay === "morning" ? "high" : "medium",
+          reason: "引入新音色或语种，拓宽听感。",
+        },
+        {
+          name: "收束余韵",
+          purpose: "cooldown",
+          trackIds: cooldownTracks.map((track) => getQueuePatchTrackId(track)),
+          targetMood: ["收束", "沉淀"],
+          targetEnergy: "low",
+          reason: "用有沉淀感的作品让频道自然收尾。",
         },
       ],
     },
@@ -82,6 +141,7 @@ export async function createProgramPlanWithDeepSeek(input: ProgramPlannerInput):
     userMemorySummary: input.userMemorySummary,
     playableTrackPool: input.playableTrackPool,
     recentTracks: input.recentTracks,
+    listeningContext: input.listeningContext,
   });
 
   if (!configured) {

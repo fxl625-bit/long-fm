@@ -832,8 +832,6 @@ export function DJHomeClient({ initialToday, recentPrograms }: Props) {
         <header className="flex items-center justify-between px-1 text-sm tracking-[0.16em] text-zinc-300/90">
           <nav className="flex items-center gap-8 text-[0.78rem]">
             <Link href="/" className="hover:text-white">HOME</Link>
-            <Link href="/workspace" className="hover:text-white">LAB</Link>
-            <Link href="/settings/sources" className="hover:text-white">MUSIC</Link>
           </nav>
           <span className="font-medium text-zinc-100">{clockLabel}</span>
         </header>

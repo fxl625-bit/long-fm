@@ -42,8 +42,8 @@ function makeState(): RadioState {
     duration: 0,
     volume: 0.82,
     providerStatus: { provider: "netease", status: "available", message: "ready" },
-    djName: "Auralia",
-    channelName: "Auralia FM",
+    djName: "Long",
+    channelName: "Long FM",
   };
 }
 
@@ -238,6 +238,16 @@ describe("RadioRuntime", () => {
         lastDecisionProvider: "deepseek",
         lastDecisionUsedFallback: false,
         lastDecisionRawResponse: "{\"shouldSpeak\":true}",
+        ttsProvider: "openai",
+        ttsVoice: "alloy",
+        lastDJAudioUrl: "/tts-cache/opening.mp3",
+        duckedVolume: {
+          before: 0.82,
+          target: 0.18,
+          restore: 0.82,
+          fadeDownMs: 120,
+          fadeUpMs: 180,
+        },
         djHostDebug: {
           state: "playing_music",
           schedulerRunning: true,
@@ -320,6 +330,16 @@ describe("RadioRuntime", () => {
     expect(debug.latestOpeningSpeech).toBe("外面的光还没完全退掉，这首歌先把房间里的边角照出来。");
     expect(debug.latestSpeakAttemptEvent).toBe("opening");
     expect(debug.latestSpeakAttemptUsedLiveDirector).toBe(true);
+    expect(debug.ttsProvider).toBe("openai");
+    expect(debug.ttsVoice).toBe("alloy");
+    expect(debug.djAudioUrl).toBe("/tts-cache/opening.mp3");
+    expect(debug.duckedVolume).toEqual({
+      before: 0.82,
+      target: 0.18,
+      restore: 0.82,
+      fadeDownMs: 120,
+      fadeUpMs: 180,
+    });
   });
 
   it("asks DeepSeek for a program plan during prepareSession and exposes planning debug state", async () => {
