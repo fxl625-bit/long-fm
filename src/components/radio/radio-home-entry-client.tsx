@@ -87,13 +87,11 @@ export function RadioHomeEntryClient() {
       return;
     }
 
+    // Navigate immediately so the user sees the radio UI while we start
+    router.push("/radio");
     setStarting(true);
     try {
-      const started = await actions.startSessionFromUserGesture("home_entry_click");
-      if (started) {
-        actions.markRoutePush();
-        router.push("/radio");
-      }
+      await actions.startSessionFromUserGesture("home_entry_click");
     } finally {
       setStarting(false);
     }

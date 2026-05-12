@@ -309,7 +309,7 @@ export function RadioSessionClient() {
 
             <VoiceSelector />
 
-            {process.env.NODE_ENV === "development" ? (
+            {false ? (
               <details className="mt-4 rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-[11px] leading-5 text-zinc-400">
                 <summary className="cursor-pointer select-none text-[12px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
                   Developer Debug
@@ -317,7 +317,7 @@ export function RadioSessionClient() {
                 <div className="mt-2 space-y-1">
                   <p>debug.currentTrack.title: {debug?.currentTrackTitle ?? "null"}</p>
                   <p>debug.currentTrack.artist: {debug?.currentTrackArtist ?? "null"}</p>
-                  <p>debug.currentTrack.audioUrl: {debug?.currentTrackAudioUrl ? debug.currentTrackAudioUrl.slice(0, 96) : "null"}</p>
+                  <p>debug.currentTrack.audioUrl: {debug?.currentTrackAudioUrl?.slice(0, 96) ?? "null"}</p>
                   <p>debug.audio.currentSrc: {debug?.audioCurrentSrc ? debug.audioCurrentSrc.slice(0, 96) : "null"}</p>
                   <p>debug.currentIndex: {debug?.currentIndex ?? 0}</p>
                   <p>debug.playableQueue.length: {state.playableQueue.length}</p>
