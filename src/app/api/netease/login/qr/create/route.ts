@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
+import { readServerEnvVar } from "@/lib/config/server-env";
 import { NeteaseClient } from "@/lib/providers/netease/netease-client";
 
 export async function POST() {
   try {
-    const session = await new NeteaseClient().createQrSession();
+    // If a preset cookie is configured, don't need QR login
+    if (readServerEnvVar("NETEASE_COOKIE")?.trim()) {
+      return NextResponse.json({
+        ok: true,
+        cookieLogin: true,
+        qrKey: "",
+        qrImageUrl: "",
+        qrUrl: "",
+      });
+    }
 
+    const session = await new NeteaseClient().createQrSession();
     return NextResponse.json({
       ok: true,
       qrKey: session.qrKey,
