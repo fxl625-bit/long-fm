@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Don't bundle the NetEase API package — it needs filesystem access
+  serverExternalPackages: ["@neteasecloudmusicapienhanced/api"],
 };
 
 export default nextConfig;
