@@ -3,7 +3,7 @@
 ## Current implementation
 
 - Current mode: `remote`
-- Resolver file: [src/lib/providers/netease/netease-api-mode.ts](/F:/CODEX/auralia-radio/src/lib/providers/netease/netease-api-mode.ts)
+- Resolver file: [src/lib/providers/netease/netease-api-mode.ts](../src/lib/providers/netease/netease-api-mode.ts)
 - Remote base URL default: `http://127.0.0.1:3001`
 - Actual configured base URL observed in local env: `http://localhost:3001`
 
@@ -32,9 +32,9 @@ The repo currently does **not** install a mature NetEase API package in `package
 
 Relevant code:
 
-- [netease-client.ts](/F:/CODEX/auralia-radio/src/lib/providers/netease/netease-client.ts)
-- [netease-music-provider.ts](/F:/CODEX/auralia-radio/src/lib/providers/music/netease-music-provider.ts)
-- [netease-auth.ts](/F:/CODEX/auralia-radio/src/lib/providers/netease/netease-auth.ts)
+- [netease-client.ts](../src/lib/providers/netease/netease-client.ts)
+- [netease-music-provider.ts](../src/lib/providers/music/netease-music-provider.ts)
+- [netease-auth.ts](../src/lib/providers/netease/netease-auth.ts)
 
 ## Cookie persistence
 
@@ -46,8 +46,8 @@ Relevant code:
 
 Relevant code:
 
-- [qr check route](/F:/CODEX/auralia-radio/src/app/api/netease/qr-check/route.ts)
-- [netease-auth.ts](/F:/CODEX/auralia-radio/src/lib/providers/netease/netease-auth.ts)
+- [qr check route](../src/app/api/netease/qr-check/route.ts)
+- [netease-auth.ts](../src/lib/providers/netease/netease-auth.ts)
 
 Observed local DB session:
 
@@ -136,18 +136,18 @@ So the previous result was:
 
 ## Fixes applied in this round
 
-1. Added a resync guard in [netease-player-provider.ts](/F:/CODEX/auralia-radio/src/lib/providers/netease/netease-player-provider.ts)
+1. Added a resync guard in [netease-player-provider.ts](../src/lib/providers/netease/netease-player-provider.ts)
    - force resync when:
    - `playlistCount <= 0`
    - or `trackCount <= 0`
    - or liked playlist track count `<= 0`
-2. Unified remote cookie transmission in [netease-music-provider.ts](/F:/CODEX/auralia-radio/src/lib/providers/music/netease-music-provider.ts)
-3. Made [status route](/F:/CODEX/auralia-radio/src/app/api/netease/status/route.ts) lightweight
+2. Unified remote cookie transmission in [netease-music-provider.ts](../src/lib/providers/music/netease-music-provider.ts)
+3. Made [status route](../src/app/api/netease/status/route.ts) lightweight
    - no longer triggers heavy full-library sync on every page load
    - reports a clear debug instruction instead
-4. Made [playlist detail route](/F:/CODEX/auralia-radio/src/app/api/netease/playlist/detail/route.ts) read-only by default
+4. Made [playlist detail route](../src/app/api/netease/playlist/detail/route.ts) read-only by default
    - only syncs when `sync=1`
-5. Added [YesPlay core debug page](/F:/CODEX/auralia-radio/src/app/debug/yesplay-core/page.tsx)
+5. Added [YesPlay core debug page](../src/app/debug/yesplay-core/page.tsx)
    - login
    - playlists
    - track list
