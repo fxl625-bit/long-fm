@@ -2,38 +2,28 @@ import { readServerEnvVar } from "@/lib/config/server-env";
 import { NeteaseMusicProvider } from "@/lib/providers/music/netease-music-provider";
 import type { MusicTrack, MusicUserProfile } from "@/lib/types/music";
 import { extractNeteaseCookie } from "./netease-payload";
-import { getNeteaseApiBaseUrl, resolveNeteaseApiMode, type NeteaseApiMode } from "./netease-api-mode";
+import { getNeteaseApiBaseUrl, getInstalledNeteaseApiPackage, resolveNeteaseApiMode, type NeteaseApiMode } from "./netease-api-mode";
 import { extractSongUrl } from "./netease-playable-resolver";
 import type { NeteaseQrSession, NeteaseQrStatus, NeteaseSongUrlResult } from "./netease-types";
 import { classifyNeteaseSongPlayableStatus } from "./netease-url-resolver";
 
-type QrCreateResponse = {
-  data?: {
-    unikey?: string;
-    qrimg?: string;
-    qrurl?: string;
-  };
-  unikey?: string;
-  qrimg?: string;
-  qrurl?: string;
-};
+// Map URL paths to package function names
+// e.g. /login/qr/key -> login_qr_key
+function pathToFnName(path: string): string {
+  return path.replace(/^\/+/, "").replace(/\//g, "_");
+}
 
-type QrCheckResponse = {
-  code?: number;
+type PackageApiFn = (params?: Record<string, unknown>) => Promise<{
+  status: number;
+  body: Record<string, unknown>;
   cookie?: string;
-  message?: string;
-  data?: {
-    cookie?: string;
-  };
-  body?: {
-    cookie?: string;
-  };
-};
+}>;
 
 export class NeteaseClient {
   readonly provider: NeteaseMusicProvider;
   readonly baseUrl: string;
   readonly apiMode: NeteaseApiMode;
+  private pkgApi: Record<string, PackageApiFn> | null = null;
 
   constructor(baseUrl = getNeteaseApiBaseUrl()) {
     this.apiMode = resolveNeteaseApiMode();
@@ -42,51 +32,47 @@ export class NeteaseClient {
       baseUrl,
       defaultCookie: readServerEnvVar("NETEASE_COOKIE"),
     });
+    if (this.apiMode === "package") {
+      const pkgName = getInstalledNeteaseApiPackage();
+      if (pkgName) {
+        this.pkgApi = require(pkgName) as Record<string, PackageApiFn>;
+      }
+    }
   }
 
   async createQrSession(): Promise<NeteaseQrSession> {
-    const keyPayload = await this.request<QrCreateResponse>("/login/qr/key", { timestamp: Date.now() });
-    const qrKey = keyPayload.data?.unikey ?? keyPayload.unikey ?? "";
-    if (!qrKey) {
-      throw new Error("Failed to create NetEase QR key");
-    }
+    const keyResult = await this.callApi("login_qr_key", {});
+    const keyBody: Record<string, unknown> = (keyResult?.body ?? {}) as Record<string, unknown>;
+    const keyData = (keyBody.data ?? keyBody) as Record<string, unknown>;
+    const qrKey = (keyData.unikey as string) || "";
+    if (!qrKey) throw new Error("Failed to create NetEase QR key");
 
-    const qrPayload = await this.request<QrCreateResponse>("/login/qr/create", {
-      key: qrKey,
-      qrimg: true,
-      timestamp: Date.now(),
-    });
-
-    const qrImageUrl = qrPayload.data?.qrimg ?? qrPayload.qrimg ?? "";
-    const qrUrl = qrPayload.data?.qrurl ?? qrPayload.qrurl;
-    if (!qrImageUrl) {
-      throw new Error("Failed to create NetEase QR image");
-    }
+    const qrResult = await this.callApi("login_qr_create", { key: qrKey, qrimg: true });
+    const qrBody: Record<string, unknown> = (qrResult?.body ?? {}) as Record<string, unknown>;
+    const qrData = (qrBody.data ?? qrBody) as Record<string, unknown>;
+    const qrImageUrl = (qrData.qrimg as string) || "";
+    if (!qrImageUrl) throw new Error("Failed to create NetEase QR image");
 
     return {
       qrKey,
       qrImageUrl,
-      qrUrl,
+      qrUrl: (qrData.qrurl as string) || "",
     };
   }
 
   async checkQrSession(qrKey: string): Promise<{ status: NeteaseQrStatus; cookie?: string; message?: string }> {
-    const response = await this.request<QrCheckResponse>("/login/qr/check", {
-      key: qrKey,
-      timestamp: Date.now(),
-    });
+    const result = await this.callApi("login_qr_check", { key: qrKey, timestamp: Date.now() });
+    const body: Record<string, unknown> = (result?.body ?? {}) as Record<string, unknown>;
+    const code: number = (body.code ?? (body.data as Record<string, unknown> | undefined)?.code ?? 801) as number;
 
     const statusMap: Record<number, NeteaseQrStatus> = {
-      800: "expired",
-      801: "pending",
-      802: "scanned",
-      803: "authorized",
+      800: "expired", 801: "pending", 802: "scanned", 803: "authorized",
     };
 
     return {
-      status: statusMap[response.code ?? 801] ?? "pending",
-      cookie: extractNeteaseCookie(response),
-      message: response.message,
+      status: statusMap[code] ?? "pending",
+      cookie: (result?.cookie as string) || extractNeteaseCookie(body),
+      message: (body.message ?? (body.data as Record<string, unknown> | undefined)?.message) as string | undefined,
     };
   }
 
@@ -95,30 +81,23 @@ export class NeteaseClient {
   }
 
   async getLoginStatus(cookie: string): Promise<Record<string, unknown>> {
-    return this.request<Record<string, unknown>>("/login/status", { cookie });
+    const result = await this.callApi("login_status", { cookie });
+    return (result?.body ?? {}) as Record<string, unknown>;
   }
 
   async getUserDetail(userId: string, cookie: string): Promise<Record<string, unknown>> {
-    return this.request<Record<string, unknown>>("/user/detail", {
-      uid: userId,
-      cookie,
-    });
+    const result = await this.callApi("user_detail", { uid: userId, cookie });
+    return (result?.body ?? {}) as Record<string, unknown>;
   }
 
   async getSongUrlV1Raw(songId: string, cookie: string, level: "standard" | "higher" | "exhigh" = "standard") {
-    return this.request<Record<string, unknown>>("/song/url/v1", {
-      id: songId,
-      level,
-      cookie,
-    });
+    const result = await this.callApi("song_url_v1", { id: songId, level, cookie });
+    return (result?.body ?? {}) as Record<string, unknown>;
   }
 
   async getSongUrlRaw(songId: string, cookie: string, br = 128000) {
-    return this.request<Record<string, unknown>>("/song/url", {
-      id: songId,
-      br,
-      cookie,
-    });
+    const result = await this.callApi("song_url", { id: songId, br, cookie });
+    return (result?.body ?? {}) as Record<string, unknown>;
   }
 
   async getUserPlaylists(cookie: string) {
@@ -196,7 +175,30 @@ export class NeteaseClient {
     };
   }
 
-  private async request<T extends Record<string, unknown>>(path: string, query: Record<string, unknown>) {
+  // callApi uses the npm package directly when in "package" mode,
+  // falling back to the HTTP sidecar only in "remote" mode.
+  private async callApi(fnName: string, params: Record<string, unknown>): Promise<{
+    body: Record<string, unknown>;
+    cookie?: string;
+  } | null> {
+    if (this.pkgApi && typeof this.pkgApi[fnName] === "function") {
+      try {
+        const result = await this.pkgApi[fnName](params);
+        return {
+          body: (result.body ?? {}) as Record<string, unknown>,
+          cookie: typeof result.cookie === "string" ? result.cookie : undefined,
+        };
+      } catch (error) {
+        console.warn(`[netease] Package call ${fnName} failed, falling back to HTTP:`, error);
+      }
+    }
+
+    // HTTP fallback (remote mode or package call failed)
+    const path = "/" + fnName.replace(/_/g, "/");
+    return this.requestViaHttp(path, params);
+  }
+
+  private async requestViaHttp(path: string, query: Record<string, unknown>) {
     const url = new URL(path, this.baseUrl);
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== null && value !== "") {
@@ -205,9 +207,7 @@ export class NeteaseClient {
     }
 
     const response = await fetch(url.toString(), {
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       cache: "no-store",
     });
 
@@ -215,7 +215,8 @@ export class NeteaseClient {
       throw new Error(`NetEase API request failed: ${response.status}`);
     }
 
-    return (await response.json()) as T;
+    const body = (await response.json()) as Record<string, unknown>;
+    return { body };
   }
 }
 
