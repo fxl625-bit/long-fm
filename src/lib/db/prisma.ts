@@ -45,7 +45,7 @@ function isDbError(error: unknown): boolean {
 function createSafePrisma(client: PrismaClient): PrismaClient {
   return new Proxy(client, {
     get(target, prop: string) {
-      const original = (target as Record<string, unknown>)[prop];
+      const original = (target as unknown as Record<string, unknown>)[prop];
       if (typeof original !== "object" || original === null) return original;
 
       return new Proxy(original as object, {
@@ -62,18 +62,18 @@ function createSafePrisma(client: PrismaClient): PrismaClient {
                 if (method === "findUnique" || method === "findFirst") {
                   // Return a sensible fallback for user lookups
                   const where = (args[0] as Record<string, unknown>)?.where as Record<string, unknown> | undefined;
-                  if (where?.id === DEMO_USER.id || where?.provider_providerUserId) return { ...DEMO_USER };
+                  if (where?.id === DEMO_USER.id || where?.provider_providerUserId) return DEMO_USER;
                   return null;
                 }
                 if (method === "findMany") return [];
                 if (method === "count") return 0;
                 if (method === "create") {
                   const data = (args[0] as Record<string, unknown>)?.data;
-                  return { id: DEMO_USER.id, ...DEMO_USER, ...(data as object ?? {}) };
+                  return { ...DEMO_USER, ...(data as object ?? {}) };
                 }
-                if (method === "upsert") return { id: DEMO_USER.id, ...DEMO_USER };
-                if (method === "update") return { id: DEMO_USER.id, ...DEMO_USER };
-                if (method === "delete") return { id: DEMO_USER.id, ...DEMO_USER };
+                if (method === "upsert") return { ...DEMO_USER };
+                if (method === "update") return { ...DEMO_USER };
+                if (method === "delete") return { ...DEMO_USER };
                 if (method === "$transaction") {
                   const fn = args[0] as Function;
                   const safeTx = createSafePrisma(client);
