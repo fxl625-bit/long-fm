@@ -1,5 +1,5 @@
 export const NETEASE_API_ROUTES = {
   status: "/api/netease/status",
-  qrCreate: "/api/netease/qr-create",
-  qrCheck: "/api/netease/qr-check",
+  qrCreate: "/api/netease/login/qr/create",
+  qrCheck: "/api/netease/login/qr/check",
 } as const;
