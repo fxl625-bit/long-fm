@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { setNeteaseCookieSession } from "@/lib/actions/session";
 import { NeteaseClient } from "@/lib/providers/netease/netease-client";
 import { completeLoginAfterQrCheck, persistNeteaseLoginSession } from "@/lib/providers/netease/netease-auth";
 import { syncLibraryFromProvider } from "@/lib/repositories/music-sync-repository";
@@ -72,17 +73,27 @@ export async function POST(request: Request) {
     let syncSummary = null;
 
     if (completed.profile) {
-      const user = await persistNeteaseLoginSession({
-        profile: completed.profile,
-        cookie: completed.cookie,
-        rawSession: {
-          qrKey,
-          message: result.message,
-          account: completed.account ?? undefined,
-        },
-      });
-      cookieSaved = true;
-      syncSummary = await syncLibraryFromProvider(user.id, client.provider, completed.cookie).catch(() => null);
+      // Save to DB (may fail silently on serverless)
+      try {
+        const user = await persistNeteaseLoginSession({
+          profile: completed.profile,
+          cookie: completed.cookie,
+          rawSession: {
+            qrKey,
+            message: result.message,
+            account: completed.account ?? undefined,
+          },
+        });
+        cookieSaved = true;
+        syncSummary = await syncLibraryFromProvider(user.id, client.provider, completed.cookie).catch(() => null);
+      } catch {
+        // DB unavailable - fall through to cookie-only session
+      }
+      // Always save cookie to HTTP session as fallback (works without DB)
+      if (completed.cookie) {
+        await setNeteaseCookieSession(completed.cookie);
+        cookieSaved = true;
+      }
     }
 
     return NextResponse.json({

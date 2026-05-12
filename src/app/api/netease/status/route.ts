@@ -1,6 +1,7 @@
 import { ProviderType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { readServerEnvVar } from "@/lib/config/server-env";
+import { getNeteaseCookieFromSession } from "@/lib/actions/session";
 import { prisma } from "@/lib/db/prisma";
 import { NeteaseClient } from "@/lib/providers/netease/netease-client";
 import { getCurrentNeteaseSession, resolveNeteaseLoginFromCookie } from "@/lib/providers/netease/netease-auth";
@@ -10,13 +11,14 @@ export async function GET() {
   try {
     const { user, providerSession } = await getCurrentNeteaseSession();
     const presetCookie = readServerEnvVar("NETEASE_COOKIE")?.trim();
-    const cookie = providerSession?.cookie?.trim() || presetCookie;
+    const cookieSession = await getNeteaseCookieFromSession();
+    const cookie = providerSession?.cookie?.trim() || cookieSession || presetCookie;
 
     if (!cookie) {
       const payload: NeteaseStatusPayload = {
         authenticated: false,
         loginState: "login_required",
-        message: "请先用网易云扫码登录，或设置 NETEASE_COOKIE 环境变量。",
+        message: "请先用网易云扫码登录。",
       };
       return NextResponse.json({
         ok: true,
