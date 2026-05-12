@@ -83,7 +83,7 @@ This is why “已连接” and “无可播歌” could appear together without
 
 ### 1. Force resync when `NETEASE` library is empty
 
-Added logic in [netease-player-provider.ts](/F:/CODEX/auralia-radio/src/lib/providers/netease/netease-player-provider.ts):
+Added logic in [netease-player-provider.ts](../src/lib/providers/netease/netease-player-provider.ts):
 
 - resync when no `NETEASE` playlists exist
 - resync when `NETEASE` playlists exist but have no tracks
@@ -91,28 +91,28 @@ Added logic in [netease-player-provider.ts](/F:/CODEX/auralia-radio/src/lib/prov
 
 ### 2. Make cookie transport consistent
 
-Updated [netease-music-provider.ts](/F:/CODEX/auralia-radio/src/lib/providers/music/netease-music-provider.ts):
+Updated [netease-music-provider.ts](../src/lib/providers/music/netease-music-provider.ts):
 
 - send cookie as query param
 - also send cookie in `Cookie` header
 
 ### 3. Make status check lightweight
 
-Updated [status route](/F:/CODEX/auralia-radio/src/app/api/netease/status/route.ts):
+Updated [status route](../src/app/api/netease/status/route.ts):
 
 - no heavy full-library sync during routine status checks
 - if playable DB tracks are still `0`, it now tells the user to open `/debug/yesplay-core`
 
 ### 4. Make playlist detail route safe for debugging
 
-Updated [playlist detail route](/F:/CODEX/auralia-radio/src/app/api/netease/playlist/detail/route.ts):
+Updated [playlist detail route](../src/app/api/netease/playlist/detail/route.ts):
 
 - default behavior: fetch detail only
 - optional DB sync only when `sync=1`
 
 ## What to validate next
 
-Use [yesplay core debug page](/F:/CODEX/auralia-radio/src/app/debug/yesplay-core/page.tsx):
+Use [yesplay core debug page](../src/app/debug/yesplay-core/page.tsx):
 
 1. Log in with QR
 2. Load playlists
