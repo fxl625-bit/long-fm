@@ -35,7 +35,11 @@ export class NeteaseClient {
     if (this.apiMode === "package") {
       const pkgName = getInstalledNeteaseApiPackage();
       if (pkgName) {
-        this.pkgApi = require(pkgName) as Record<string, PackageApiFn>;
+        try {
+          this.pkgApi = require(pkgName) as Record<string, PackageApiFn>;
+        } catch (e) {
+          console.warn("[netease] Failed to load package, falling back to HTTP:", (e as Error).message);
+        }
       }
     }
   }
@@ -189,13 +193,19 @@ export class NeteaseClient {
           cookie: typeof result.cookie === "string" ? result.cookie : undefined,
         };
       } catch (error) {
-        console.warn(`[netease] Package call ${fnName} failed, falling back to HTTP:`, error);
+        console.warn(`[netease] Package call ${fnName} failed:`, (error as Error).message);
+        throw error; // Don't fallback to HTTP on Vercel - HTTP won't work either
       }
     }
 
-    // HTTP fallback (remote mode or package call failed)
-    const path = "/" + fnName.replace(/_/g, "/");
-    return this.requestViaHttp(path, params);
+    // If no package API available, try HTTP (local dev with sidecar)
+    if (!this.pkgApi) {
+      const path = "/" + fnName.replace(/_/g, "/");
+      console.log(`[netease] No package API, using HTTP fallback for ${fnName}`);
+      return this.requestViaHttp(path, params);
+    }
+
+    throw new Error(`NetEase API function not found: ${fnName}`);
   }
 
   private async requestViaHttp(path: string, query: Record<string, unknown>) {
