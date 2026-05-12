@@ -1,6 +1,6 @@
 ﻿# Claudio 视频完整转录与实现拆解
 
-- 源文件：`C:\Users\yckj0094\Desktop\bf04610bbd4aeafc04f39db6a4aa6835.mp4`
+- 源文件：`<local-video-file-path>`
 - 自动转录产物：`F:\CODEX\auralia-radio\tmp\transcript\`
 - 说明：以下为 `Whisper small` 转录后人工校对版本，个别词语可能仍有轻微误差。
 
