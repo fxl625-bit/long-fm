@@ -19,7 +19,7 @@
 - Inspect: `prisma/`
 - Inspect: `public/audio/`
 
-- [ ] Verify the active working repository is `F:\CODEX\auralia-radio` and note that `C:\Users\yckj0094\Documents\Codex\2026-04-30\ai-dj-f-codex-auralia-radio` is an empty shell directory, not the real repo.
+- [ ] Verify the active working repository is `<project-root>` and note that `<legacy-project-copy>` is an empty shell directory, not the real repo.
 - [ ] Capture `git log --oneline --decorate --graph --all -n 20` and confirm every existing worktree branch still points at `dfad057 Initial commit from Create Next App`.
 - [ ] Capture `git worktree list --porcelain` and confirm all worktrees inherit the wrong baseline.
 - [ ] Capture `git status --short --ignored` and verify the product tree is staged while runtime artifacts remain ignored.
